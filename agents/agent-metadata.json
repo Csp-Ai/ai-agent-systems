@@ -12,6 +12,7 @@
       "confidenceScore": "number"
     },
     "category": "CX / Marketing",
+    "dependsOn": ["website-scanner-agent"],
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
@@ -29,6 +30,7 @@
       "result": "markdown"
     },
     "category": "Documentation",
+    "dependsOn": ["insights-agent"],
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",

@@ -195,6 +195,101 @@ app.use((req, res, next) => {
 // Object to hold loaded agents keyed by file name (without extension)
 const registeredAgents = loadAgents();
 
+async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step) {
+  if (results[agentName]) return results[agentName];
+
+  if (stack.includes(agentName)) {
+    throw new Error('Circular dependency detected: ' + [...stack, agentName].join(' -> '));
+  }
+
+  const metadata = agentMetadata[agentName];
+  if (!metadata) {
+    throw new Error(`Agent '${agentName}' not found`);
+  }
+  if (!metadata.enabled) {
+    throw new Error(`Agent '${agentName}' is disabled`);
+  }
+
+  stack.push(agentName);
+
+  const depResults = {};
+  for (const dep of metadata.dependsOn || []) {
+    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step);
+  }
+
+  const expectedInputs = metadata.inputs || {};
+  const missingInputs = Object.keys(expectedInputs).filter(k => !(k in input));
+  if (missingInputs.length > 0) {
+    throw new Error(`Missing required inputs: ${missingInputs.join(', ')}`);
+  }
+
+  const agent = registeredAgents[agentName];
+  if (!agent) {
+    throw new Error(`Agent '${agentName}' implementation not found`);
+  }
+
+  try {
+    if (sessionId !== undefined && step !== undefined) {
+      updateSession(sessionId, step, agentName, 'active');
+      saveSessionLog(sessionId, {
+        timestamp: new Date().toISOString(),
+        clientName: input.clientName,
+        step,
+        agent: agentName,
+        status: 'active',
+        input
+      });
+    }
+
+    const result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
+
+    if (sessionId !== undefined && step !== undefined) {
+      updateSession(sessionId, step, agentName, 'completed');
+      saveSessionLog(sessionId, {
+        timestamp: new Date().toISOString(),
+        clientName: input.clientName,
+        step,
+        agent: agentName,
+        status: 'completed',
+        output: result
+      });
+    }
+
+    appendLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      input,
+      output: result
+    });
+    logAgentAction({ sessionId, agent: agentName, input, result });
+
+    results[agentName] = result;
+    stack.pop();
+    return result;
+  } catch (err) {
+    if (sessionId !== undefined && step !== undefined) {
+      updateSession(sessionId, step, agentName, 'failed');
+      saveSessionLog(sessionId, {
+        timestamp: new Date().toISOString(),
+        clientName: input.clientName,
+        step,
+        agent: agentName,
+        status: 'failed',
+        error: err.message
+      });
+    }
+    appendLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      input,
+      error: err.message
+    });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
+    stack.pop();
+    throw err;
+  }
+}
+
 app.use('/admin', (req, res, next) => {
   if (!isAuthorized(req)) return res.status(401).send('Unauthorized');
   next();
@@ -253,98 +348,12 @@ app.post('/run-agent', async (req, res) => {
     return res.status(400).json({ error: 'Agent name not provided' });
   }
 
-  const metadata = agentMetadata[agentName];
-
-  if (!metadata) {
-    appendLog({
-      timestamp: new Date().toISOString(),
-      agent: agentName,
-      input,
-      error: `Agent '${agentName}' not found in metadata`,
-    });
-    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Agent '${agentName}' not found` } });
-    return res.status(400).json({ error: `Agent '${agentName}' not found` });
-  }
-
-  if (!metadata.enabled) {
-    appendLog({
-      timestamp: new Date().toISOString(),
-      agent: agentName,
-      input,
-      error: `Agent '${agentName}' is disabled`,
-    });
-    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Agent '${agentName}' is disabled` } });
-    return res.status(400).json({ error: `Agent '${agentName}' is disabled` });
-  }
-
-  const expectedInputs = metadata.inputs || {};
-  const missingInputs = Object.keys(expectedInputs).filter(
-    (key) => !(key in input)
-  );
-
-  if (missingInputs.length > 0) {
-    appendLog({
-      timestamp: new Date().toISOString(),
-      agent: agentName,
-      input,
-      error: `Missing required inputs: ${missingInputs.join(', ')}`,
-    });
-    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Missing required inputs: ${missingInputs.join(', ')}` } });
-    return res
-      .status(400)
-      .json({ error: 'Missing required inputs', missing: missingInputs });
-  }
-
-  const agent = registeredAgents[agentName];
-
-  if (!agent) {
-    appendLog({
-      timestamp: new Date().toISOString(),
-      agent: agentName,
-      input,
-      error: `Agent '${agentName}' implementation not found`,
-    });
-    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Agent '${agentName}' implementation not found` } });
-    return res
-      .status(404)
-      .json({ error: `Agent '${agentName}' implementation not found` });
-  }
-
   try {
-    if (sessionId !== undefined && step !== undefined) {
-      updateSession(sessionId, step, agentName, 'active');
-      saveSessionLog(sessionId, { timestamp: new Date().toISOString(), clientName: input.clientName, step, agent: agentName, status: 'active', input });
-    }
-
-    const result = await Promise.resolve(agent.run(input));
-
-    if (sessionId !== undefined && step !== undefined) {
-      updateSession(sessionId, step, agentName, 'completed');
-      saveSessionLog(sessionId, { timestamp: new Date().toISOString(), clientName: input.clientName, step, agent: agentName, status: 'completed', output: result });
-    }
-
-    appendLog({
-      timestamp: new Date().toISOString(),
-      agent: agentName,
-      input,
-      output: result,
-    });
-    logAgentAction({ sessionId, agent: agentName, input, result });
-    return res.json({ result });
+    const results = {};
+    const finalResult = await executeAgent(agentName, input, results, [], sessionId, step);
+    return res.json({ result: finalResult, allResults: results });
   } catch (err) {
-    if (sessionId !== undefined && step !== undefined) {
-      updateSession(sessionId, step, agentName, 'failed');
-      saveSessionLog(sessionId, { timestamp: new Date().toISOString(), clientName: input.clientName, step, agent: agentName, status: 'failed', error: err.message });
-    }
-    console.error(`Agent '${agentName}' failed to run:`, err);
-    appendLog({
-      timestamp: new Date().toISOString(),
-      agent: agentName,
-      input,
-      error: err.message,
-    });
-    logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
-    return res.status(500).json({ error: 'Agent execution failed', details: err.message });
+    return res.status(500).json({ error: err.message });
   }
 });
 
