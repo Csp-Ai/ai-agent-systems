@@ -8,6 +8,7 @@ const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
+const { logAgentAction } = require('./auditLogger');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -248,6 +249,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       error: 'Agent name not provided',
     });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: 'Agent name not provided' } });
     return res.status(400).json({ error: 'Agent name not provided' });
   }
 
@@ -260,6 +262,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       error: `Agent '${agentName}' not found in metadata`,
     });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Agent '${agentName}' not found` } });
     return res.status(400).json({ error: `Agent '${agentName}' not found` });
   }
 
@@ -270,6 +273,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       error: `Agent '${agentName}' is disabled`,
     });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Agent '${agentName}' is disabled` } });
     return res.status(400).json({ error: `Agent '${agentName}' is disabled` });
   }
 
@@ -285,6 +289,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       error: `Missing required inputs: ${missingInputs.join(', ')}`,
     });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Missing required inputs: ${missingInputs.join(', ')}` } });
     return res
       .status(400)
       .json({ error: 'Missing required inputs', missing: missingInputs });
@@ -299,6 +304,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       error: `Agent '${agentName}' implementation not found`,
     });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: `Agent '${agentName}' implementation not found` } });
     return res
       .status(404)
       .json({ error: `Agent '${agentName}' implementation not found` });
@@ -323,6 +329,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       output: result,
     });
+    logAgentAction({ sessionId, agent: agentName, input, result });
     return res.json({ result });
   } catch (err) {
     if (sessionId !== undefined && step !== undefined) {
@@ -336,6 +343,7 @@ app.post('/run-agent', async (req, res) => {
       input,
       error: err.message,
     });
+    logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
     return res.status(500).json({ error: 'Agent execution failed', details: err.message });
   }
 });
