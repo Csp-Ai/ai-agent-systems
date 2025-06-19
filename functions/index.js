@@ -10,6 +10,8 @@ const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
+
+const BASE_TRANSLATE_URL = process.env.LIBRETRANSLATE_URL || 'https://libretranslate.de';
 const {
   logAgentAction,
   readAuditLogs,
@@ -49,6 +51,26 @@ function validateToken(token) {
   }
   loginTokens.delete(token);
   return data.email;
+}
+
+async function detectLanguage(text) {
+  const res = await fetch(`${BASE_TRANSLATE_URL}/detect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: text })
+  });
+  const data = await res.json();
+  return Array.isArray(data) && data[0] ? data[0].language : 'en';
+}
+
+async function translateText(text, target) {
+  const res = await fetch(`${BASE_TRANSLATE_URL}/translate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ q: text, target })
+  });
+  const data = await res.json();
+  return data.translatedText || text;
 }
 
 const PUBLIC_REPORTS_DIR = path.join(__dirname, '..', 'reports');
@@ -566,6 +588,39 @@ app.get('/viewer', (req, res) => {
     <script type="text/babel">ReactDOM.render(<PublicViewer url={window.reportUrl} />, document.getElementById('root'));</script>
   </body>
   </html>`);
+});
+
+app.get('/locales', async (req, res) => {
+  try {
+    const resp = await fetch(`${BASE_TRANSLATE_URL}/languages`);
+    const data = await resp.json();
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch languages' });
+  }
+});
+
+app.post('/detect-language', async (req, res) => {
+  const { text = '' } = req.body || {};
+  if (!text) return res.status(400).json({ error: 'Text is required' });
+  try {
+    const language = await detectLanguage(text);
+    res.json({ language });
+  } catch {
+    res.status(500).json({ error: 'Detection failed' });
+  }
+});
+
+app.post('/translate', async (req, res) => {
+  const { text = '', targetLang } = req.body || {};
+  if (!text || !targetLang) return res.status(400).json({ error: 'Text and targetLang are required' });
+  try {
+    const sourceLang = await detectLanguage(text);
+    const translatedText = await translateText(text, targetLang);
+    res.json({ sourceLang, translatedText });
+  } catch {
+    res.status(500).json({ error: 'Translation failed' });
+  }
 });
 
 // Strategy board dashboard

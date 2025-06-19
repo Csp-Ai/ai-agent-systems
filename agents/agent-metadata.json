@@ -18,7 +18,9 @@
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19"
+    "lastUpdated": "2025-06-19",
+    "locales": ["en"],
+    "lifecycle": "production"
   },
   "report-generator-agent": {
     "name": "Report Generator",
@@ -38,7 +40,9 @@
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19"
+    "lastUpdated": "2025-06-19",
+    "locales": ["en"],
+    "lifecycle": "production"
   },
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
@@ -56,7 +60,9 @@
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19"
+    "lastUpdated": "2025-06-19",
+    "locales": ["en"],
+    "lifecycle": "production"
   },
   "data-analyst-agent": {
     "name": "Data Analyst Agent",
@@ -75,7 +81,9 @@
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19"
+    "lastUpdated": "2025-06-19",
+    "locales": ["en"],
+    "lifecycle": "production"
   },
   "mentor-agent": {
     "name": "Mentor Agent",
@@ -90,7 +98,9 @@
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19"
+    "lastUpdated": "2025-06-19",
+    "locales": ["en"],
+    "lifecycle": "production"
   },
   "board-agent": {
     "name": "Strategy Board Agent",
@@ -106,6 +116,8 @@
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19"
+    "lastUpdated": "2025-06-19",
+    "locales": ["en"],
+    "lifecycle": "beta"
   }
 }
