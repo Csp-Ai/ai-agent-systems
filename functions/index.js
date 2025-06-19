@@ -100,6 +100,18 @@ function saveSessionLog(sessionId, data) {
   fs.writeFileSync(file, JSON.stringify(logs, null, 2));
 }
 
+function getSessionLogs(sessionId) {
+  ensureSessionFiles();
+  const file = path.join(SESSION_LOG_DIR, `${sessionId}.json`);
+  if (!fs.existsSync(file)) return [];
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 // Append request info to log file
 function logRequest(req) {
   appendLog({
@@ -228,6 +240,15 @@ app.get('/status/:sessionId', (req, res) => {
   const sessions = readSessionStatus();
   const data = sessions[sessionId] || [];
   res.json(data);
+});
+
+// Endpoint to resume a previous session (status and logs)
+app.get('/resume/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const sessions = readSessionStatus();
+  const status = sessions[sessionId] || [];
+  const logs = getSessionLogs(sessionId);
+  res.json({ status, logs });
 });
 
 const PORT = process.env.PORT || 3000;

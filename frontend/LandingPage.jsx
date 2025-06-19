@@ -13,6 +13,49 @@ const LandingPage = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const hasSavedSession = sessionId && stepStatus.some(s => s !== 'pending');
+
+  const fetchStatus = async (id) => {
+    try {
+      const endpoint =
+        process.env.NODE_ENV === 'production'
+          ? `/status/${id}`
+          : `http://localhost:3000/status/${id}`;
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const updated = analysisSteps.map((_, i) => {
+          const step = data.find((s) => s.step === i);
+          return step ? step.status : 'pending';
+        });
+        setStepStatus(updated);
+        const next = updated.findIndex((s) => s !== 'completed');
+        if (next === -1) {
+          setAnalysisComplete(true);
+        } else {
+          setCurrentStep(next);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch status:', err);
+    }
+  };
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sessionId');
+    if (saved) {
+      setSessionId(saved);
+      fetchStatus(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (sessionId) {
+      localStorage.setItem('sessionId', sessionId);
+    } else {
+      localStorage.removeItem('sessionId');
+    }
+  }, [sessionId]);
 
   const analysisSteps = [
     { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows", duration: 3000 },
@@ -162,12 +205,21 @@ const LandingPage = () => {
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
+  const resumeExistingSession = () => {
+    if (!sessionId) return;
+    const next = stepStatus.findIndex(s => s !== 'completed');
+    setCurrentStep(next === -1 ? analysisSteps.length - 1 : next);
+    setIsAnalyzing(true);
+  };
+
   const resetAnalysis = () => {
     setIsAnalyzing(false);
     setAnalysisComplete(false);
     setCurrentStep(0);
     setShowPricing(false);
     setAnalysisResult(null);
+    setStepStatus([]);
+    setSessionId(null);
   };
 
   return (
@@ -212,7 +264,31 @@ const LandingPage = () => {
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-2xl mx-auto border border-white/20">
               <h3 className="text-2xl font-semibold text-white mb-6">Get Your Free AI Analysis</h3>
               
-              {!isAnalyzing && !analysisComplete && (
+              {!isAnalyzing && !analysisComplete && hasSavedSession && (
+                <div className="space-y-4">
+                  <AgentTracker
+                    steps={analysisSteps.map(s => s.title)}
+                    currentStep={currentStep}
+                    status={stepStatus}
+                  />
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={resumeExistingSession}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                    >
+                      Resume Analysis
+                    </button>
+                    <button
+                      onClick={resetAnalysis}
+                      className="border border-white/30 text-white px-4 py-2 rounded hover:bg-white/10"
+                    >
+                      Start Over
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!isAnalyzing && !analysisComplete && !hasSavedSession && (
                 <div className="space-y-4">
                   <input
                     type="text"
