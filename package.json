@@ -4,11 +4,12 @@
   "description": "Custom AI agent systems to streamline operations, automate tasks, and enhance decision-making. Built by a strategy-led, builder-driven team.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node functions/index.js",
+    "test": "echo \"No tests configured yet\" && exit 0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["AI", "agents", "automation", "modular", "orchestration"],
+  "author": "Csp-Ai",
+  "license": "Apache-2.0",
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.5",
