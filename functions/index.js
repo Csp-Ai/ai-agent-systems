@@ -22,6 +22,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const REPORTS_DIR = path.join(__dirname, '..', 'reports');
+app.use('/reports', express.static(REPORTS_DIR));
+
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'logs.json');
 const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
@@ -282,7 +285,7 @@ app.post('/run-agent', async (req, res) => {
 
 // Endpoint to email report as PDF attachment
 app.post('/send-report', async (req, res) => {
-  const { email, report = '' } = req.body || {};
+  const { email, report = '', sessionId } = req.body || {};
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
   }
@@ -297,6 +300,13 @@ app.post('/send-report', async (req, res) => {
       doc.text(report || 'AI Agent Report');
       doc.end();
     });
+
+    if (sessionId) {
+      if (!fs.existsSync(REPORTS_DIR)) {
+        fs.mkdirSync(REPORTS_DIR, { recursive: true });
+      }
+      fs.writeFileSync(path.join(REPORTS_DIR, `${sessionId}.pdf`), pdfBuffer);
+    }
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,

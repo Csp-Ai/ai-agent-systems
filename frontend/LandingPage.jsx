@@ -149,7 +149,19 @@ const LandingPage = () => {
                 />
               )}
               {analysisComplete && emailSent && (
-                <p className="mt-4 text-green-400">✅ Email Sent!</p>
+                <div className="mt-4 flex flex-col items-center">
+                  <p className="text-green-400">✅ Email Sent!</p>
+                  {sessionId && (
+                    <a
+                      href={`/reports/${sessionId}.pdf`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded"
+                    >
+                      View Report
+                    </a>
+                  )}
+                </div>
               )}
             </div>
           </div>
