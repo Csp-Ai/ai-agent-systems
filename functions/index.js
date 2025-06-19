@@ -9,6 +9,13 @@ const agentMetadata = require('../agents/agent-metadata.json');
 // Load environment variables from .env if present
 dotenv.config();
 
+const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+
+function isAuthorized(req) {
+  const key = req.headers['x-admin-key'] || req.query.key;
+  return key === ADMIN_KEY;
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -118,6 +125,43 @@ app.use((req, res, next) => {
 
 // Object to hold loaded agents keyed by file name (without extension)
 const registeredAgents = loadAgents();
+
+app.use('/admin', (req, res, next) => {
+  if (!isAuthorized(req)) return res.status(401).send('Unauthorized');
+  next();
+});
+
+app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')));
+
+app.get('/logs/sessions', (req, res) => {
+  if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
+  ensureSessionFiles();
+  const { days } = req.query;
+  const cutoff = days ? Date.now() - parseInt(days, 10) * 86400000 : null;
+  const files = fs.readdirSync(SESSION_LOG_DIR).filter(f => f.endsWith('.json'));
+  const sessions = files.map(file => {
+    const id = path.basename(file, '.json');
+    const entries = JSON.parse(fs.readFileSync(path.join(SESSION_LOG_DIR, file), 'utf8'));
+    if (!Array.isArray(entries) || entries.length === 0) return null;
+    const first = entries[0];
+    const last = entries[entries.length - 1];
+    const ts = first.timestamp || '';
+    if (cutoff && new Date(ts).getTime() < cutoff) return null;
+    const name = first.input?.clientName || first.input?.companyName || first.clientName || '';
+    const email = first.input?.email || '';
+    const agents = [...new Set(entries.map(e => e.agent).filter(Boolean))];
+    const status = last.status || 'unknown';
+    return { sessionId: id, name, email, date: ts, agents, status };
+  }).filter(Boolean).sort((a, b) => new Date(b.date) - new Date(a.date));
+  res.json(sessions);
+});
+
+app.get('/logs/sessions/:id', (req, res) => {
+  if (!isAuthorized(req)) return res.status(401).send('Unauthorized');
+  const file = path.join(SESSION_LOG_DIR, `${req.params.id}.json`);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
+  res.download(file);
+});
 
 // Endpoint to execute a specific agent
 app.post('/run-agent', async (req, res) => {
