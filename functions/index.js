@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
+const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
 
@@ -22,8 +23,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const REPORTS_DIR = path.join(__dirname, '..', 'reports');
-app.use('/reports', express.static(REPORTS_DIR));
+// In-memory store for login tokens
+const loginTokens = new Map();
+
+function generateToken(email) {
+  const token = crypto.randomBytes(16).toString('hex');
+  loginTokens.set(token, { email, expires: Date.now() + 15 * 60 * 1000 }); // 15m
+  return token;
+}
+
+function validateToken(token) {
+  const data = loginTokens.get(token);
+  if (!data) return null;
+  if (Date.now() > data.expires) {
+    loginTokens.delete(token);
+    return null;
+  }
+  loginTokens.delete(token);
+  return data.email;
+}
+
+const PUBLIC_REPORTS_DIR = path.join(__dirname, '..', 'reports');
+app.use('/reports', express.static(PUBLIC_REPORTS_DIR));
 
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'logs.json');
@@ -130,6 +151,30 @@ function getSessionLogs(sessionId) {
   }
 }
 
+function getReportsForEmail(email) {
+  ensureSessionFiles();
+  const files = fs.readdirSync(SESSION_LOG_DIR).filter(f => f.endsWith('.json'));
+  const sessions = [];
+  for (const file of files) {
+    try {
+      const entries = JSON.parse(fs.readFileSync(path.join(SESSION_LOG_DIR, file), 'utf8'));
+      if (!Array.isArray(entries) || entries.length === 0) continue;
+      const first = entries[0];
+      const sessionEmail = first.input?.email || '';
+      if (sessionEmail.toLowerCase() === email.toLowerCase()) {
+        const id = path.basename(file, '.json');
+        const pdf = path.join(REPORTS_DIR, `${id}.pdf`);
+        if (fs.existsSync(pdf)) {
+          sessions.push(`/reports/${id}.pdf`);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+  return sessions;
+}
+
 // Append request info to log file
 function logRequest(req) {
   appendLog({
@@ -155,6 +200,9 @@ app.use('/admin', (req, res, next) => {
 });
 
 app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')));
+
+// Serve client portal assets
+app.use('/client', express.static(path.join(__dirname, '..', 'frontend', 'client')));
 
 // Serve generated PDF reports from logs/reports
 app.use('/reports', express.static('logs/reports'));
@@ -345,6 +393,65 @@ app.post('/send-report', async (req, res) => {
     console.error('Failed to send report email:', err);
     res.status(500).json({ error: 'Failed to send email' });
   }
+});
+
+// Send magic login link to client email
+app.post('/client/send-link', async (req, res) => {
+  const { email } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const token = generateToken(email);
+    const link = `${req.protocol}://${req.get('host')}/client/login?token=${token}`;
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+      to: email,
+      subject: 'Your secure report link',
+      text: `Access your reports here: ${link}`,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to send login link:', err);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+// Validate token and render portal
+app.get('/client/login', (req, res) => {
+  const email = validateToken(req.query.token || '');
+  if (!email) return res.status(400).send('Invalid or expired link');
+
+  const reports = getReportsForEmail(email);
+
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Client Portal</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-900">
+    <div id="root"></div>
+    <script>window.reportLinks = ${JSON.stringify(reports)};</script>
+    <script type="text/babel" src="/client/ClientPortal.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<ClientPortal reports={window.reportLinks} />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
 });
 
 // Endpoint to fetch current session status
