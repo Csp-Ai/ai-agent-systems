@@ -12,13 +12,14 @@
       "confidenceScore": "number"
     },
     "category": "CX / Marketing",
-    "dependsOn": ["website-scanner-agent"],
+    "dependsOn": [
+      "website-scanner-agent"
+    ],
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19"
   },
-
   "report-generator-agent": {
     "name": "Report Generator",
     "description": "Compiles outputs from all agents into a structured Markdown summary for clients.",
@@ -30,13 +31,15 @@
       "result": "markdown"
     },
     "category": "Documentation",
-    "dependsOn": ["insights-agent"],
+    "dependsOn": [
+      "insights-agent",
+      "data-analyst-agent"
+    ],
     "enabled": true,
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19"
   },
-
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
     "description": "Scrapes homepage content and meta tags to extract structure and keywords.",
@@ -50,6 +53,25 @@
     "category": "Data Extraction",
     "enabled": false,
     "version": "0.1.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19"
+  },
+  "data-analyst-agent": {
+    "name": "Data Analyst Agent",
+    "description": "Aggregates agent outputs for summaries, statistics and correlations while flagging outliers.",
+    "inputs": {
+      "agentOutputs": "array"
+    },
+    "outputs": {
+      "summary": "string",
+      "statistics": "object",
+      "correlations": "object",
+      "insights": "array",
+      "outliers": "array"
+    },
+    "category": "Analytics",
+    "enabled": true,
+    "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19"
   }
