@@ -7,13 +7,21 @@
     "start": "node functions/index.js",
     "test": "echo \"No tests configured yet\" && exit 0"
   },
-  "keywords": ["AI", "agents", "automation", "modular", "orchestration"],
+  "keywords": [
+    "AI",
+    "agents",
+    "automation",
+    "modular",
+    "orchestration"
+  ],
   "author": "Csp-Ai",
   "license": "Apache-2.0",
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "file-saver": "^2.0.5",
+    "html2pdf.js": "^0.10.3"
   }
 }

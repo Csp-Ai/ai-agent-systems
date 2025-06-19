@@ -1,10 +1,13 @@
 // frontend/ReportViewer.jsx
 
 import React from 'react';
-import { CheckCircle, Copy, FileDown, Mail } from 'lucide-react';
+import { CheckCircle, Copy, FileDown, FileText } from 'lucide-react';
 import { saveAs } from 'file-saver';
+import html2pdf from 'html2pdf.js';
 
 export default function ReportViewer({ markdownText = "", onClose }) {
+  const reportRef = React.useRef(null);
+
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(markdownText);
@@ -17,6 +20,28 @@ export default function ReportViewer({ markdownText = "", onClose }) {
   const downloadAsFile = () => {
     const blob = new Blob([markdownText], { type: "text/markdown;charset=utf-8" });
     saveAs(blob, `ai-report-${Date.now()}.md`);
+  };
+
+  const downloadAsPDF = () => {
+    if (!reportRef.current) return;
+    const clone = reportRef.current.cloneNode(true);
+    clone.style.background = '#fff';
+    clone.style.color = '#000';
+    clone.style.fontFamily = 'monospace';
+    clone.style.padding = '20px';
+    clone.style.whiteSpace = 'pre-wrap';
+    document.body.appendChild(clone);
+
+    const options = {
+      margin:       10,
+      filename:     `ai-report-${Date.now()}.pdf`,
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'pt', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(options).from(clone).save().then(() => {
+      document.body.removeChild(clone);
+    });
   };
 
   return (
@@ -32,6 +57,9 @@ export default function ReportViewer({ markdownText = "", onClose }) {
           <button onClick={downloadAsFile} title="Download">
             <FileDown className="w-5 h-5 text-white hover:text-green-400" />
           </button>
+          <button onClick={downloadAsPDF} title="Download PDF">
+            <FileText className="w-5 h-5 text-white hover:text-red-400" />
+          </button>
           {onClose && (
             <button
               onClick={onClose}
@@ -43,7 +71,10 @@ export default function ReportViewer({ markdownText = "", onClose }) {
         </div>
       </div>
 
-      <pre className="whitespace-pre-wrap text-green-300 text-sm bg-slate-900 p-4 rounded overflow-auto max-h-[600px]">
+      <pre
+        ref={reportRef}
+        className="whitespace-pre-wrap text-green-300 text-sm bg-slate-900 p-4 rounded overflow-auto max-h-[600px]"
+      >
         {markdownText}
       </pre>
     </div>
