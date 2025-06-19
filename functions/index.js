@@ -19,6 +19,9 @@ const {
 // Load environment variables from .env if present
 dotenv.config();
 
+const LT_URL = process.env.TRANSLATE_URL || 'https://libretranslate.de';
+const LT_KEY = process.env.TRANSLATE_KEY || '';
+
 const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
 
 function isAuthorized(req) {
@@ -618,6 +621,53 @@ app.get('/resume/:sessionId', (req, res) => {
   const status = sessions[sessionId] || [];
   const logs = getSessionLogs(sessionId);
   res.json({ status, logs });
+});
+
+// LibreTranslate - available languages
+app.get('/locales', async (req, res) => {
+  try {
+    const resp = await fetch(`${LT_URL}/languages`);
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch locales' });
+  }
+});
+
+// LibreTranslate - detect language
+app.post('/detect-language', async (req, res) => {
+  const { text } = req.body || {};
+  if (!text) return res.status(400).json({ error: 'text is required' });
+  try {
+    const resp = await fetch(`${LT_URL}/detect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: text, api_key: LT_KEY }),
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Language detection failed' });
+  }
+});
+
+// LibreTranslate - translate text
+app.post('/translate', async (req, res) => {
+  const { text, target, source } = req.body || {};
+  if (!text || !target) {
+    return res.status(400).json({ error: 'text and target are required' });
+  }
+  try {
+    const resp = await fetch(`${LT_URL}/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: text, target, source, api_key: LT_KEY }),
+    });
+    const data = await resp.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Translation failed' });
+  }
 });
 
 const PORT = process.env.PORT || 3000;
