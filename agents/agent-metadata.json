@@ -43,7 +43,9 @@
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
     "description": "Fetches a website URL and extracts metadata, heading tags, Open Graph tags, and link structure.",
-    "inputs": { "url": "url" },
+    "inputs": {
+      "url": "url"
+    },
     "outputs": {
       "metadata": "object",
       "headings": "object",
@@ -68,6 +70,21 @@
       "correlations": "object",
       "insights": "array",
       "outliers": "array"
+    },
+    "category": "Analytics",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19"
+  },
+  "mentor-agent": {
+    "name": "Mentor Agent",
+    "description": "Monitors benchmarks and audit logs to suggest improvements.",
+    "inputs": {},
+    "outputs": {
+      "summary": "string",
+      "encouragement": "string",
+      "plans": "array"
     },
     "category": "Analytics",
     "enabled": true,
