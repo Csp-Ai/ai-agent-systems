@@ -26,6 +26,12 @@ const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'logs.json');
 const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
+const REPORTS_DIR = path.join(LOG_DIR, 'reports');
+
+// Ensure reports directory exists so generated PDFs can be served
+if (!fs.existsSync(REPORTS_DIR)) {
+  fs.mkdirSync(REPORTS_DIR, { recursive: true });
+}
 
 // Ensure log directory and file exist
 function ensureLogFile() {
@@ -146,6 +152,9 @@ app.use('/admin', (req, res, next) => {
 });
 
 app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')));
+
+// Serve generated PDF reports from logs/reports
+app.use('/reports', express.static('logs/reports'));
 
 app.get('/logs/sessions', (req, res) => {
   if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
