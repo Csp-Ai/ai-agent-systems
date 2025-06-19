@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import ReactFlow, { Background, Controls } from 'reactflow';
 import 'reactflow/dist/style.css';
+import AgentSuccessOverlay from './AgentSuccessOverlay';
 
 export default function AgentOrgChart() {
   const [metadata, setMetadata] = useState({});
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [enabledFilter, setEnabledFilter] = useState('all');
+  const [selectedAgent, setSelectedAgent] = useState(null);
 
   useEffect(() => {
     const fetchMetadata = async () => {
@@ -92,10 +94,19 @@ export default function AgentOrgChart() {
           </select>
         </label>
       </div>
-      <ReactFlow nodes={nodes} edges={edges} fitView>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        fitView
+        onNodeClick={(_, node) => setSelectedAgent(node.id)}
+      >
         <Background />
         <Controls />
       </ReactFlow>
+      <AgentSuccessOverlay
+        agentId={selectedAgent}
+        onClose={() => setSelectedAgent(null)}
+      />
     </div>
   );
 }
