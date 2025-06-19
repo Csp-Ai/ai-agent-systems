@@ -3,12 +3,14 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+const multer = require('multer');
+const JSZip = require('jszip');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
-const { logAgentAction, readAuditLogs } = require('./auditLogger');
+const { logAgentAction, readAuditLogs, appendAuditLog } = require('./auditLogger');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -23,6 +25,7 @@ function isAuthorized(req) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // In-memory store for login tokens
 const loginTokens = new Map();
@@ -331,6 +334,60 @@ app.get('/logs/sessions/:id', (req, res) => {
   const file = path.join(SESSION_LOG_DIR, `${req.params.id}.json`);
   if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
   res.download(file);
+});
+
+const STAGING_DIR = path.join(__dirname, '..', 'staging');
+
+app.post('/submit-agent', upload.single('code'), async (req, res) => {
+  if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
+
+  if (!req.body || !req.body.metadata) {
+    return res.status(400).json({ error: 'Metadata is required' });
+  }
+
+  let metadata;
+  try {
+    metadata = JSON.parse(req.body.metadata);
+  } catch {
+    return res.status(400).json({ error: 'Invalid metadata JSON' });
+  }
+
+  const required = ['name', 'description', 'version', 'createdBy'];
+  const missing = required.filter(f => !metadata[f]);
+  if (missing.length) {
+    return res.status(400).json({ error: `Missing fields: ${missing.join(', ')}` });
+  }
+
+  if (!req.file) return res.status(400).json({ error: 'Zip file is required' });
+
+  try {
+    const zip = await JSZip.loadAsync(req.file.buffer);
+    const unsafe = [/require\(['"]child_process['"]\)/, /process\.exit/, /fs\.unlink/];
+    for (const name of Object.keys(zip.files)) {
+      const file = zip.files[name];
+      if (file.dir) continue;
+      const content = await file.async('string');
+      if (unsafe.some(p => p.test(content))) {
+        return res.status(400).json({ error: 'Unsafe code detected' });
+      }
+    }
+
+    if (!fs.existsSync(STAGING_DIR)) fs.mkdirSync(STAGING_DIR, { recursive: true });
+    const dest = path.join(STAGING_DIR, `${metadata.name}.zip`);
+    fs.writeFileSync(dest, req.file.buffer);
+
+    appendAuditLog({
+      timestamp: new Date().toISOString(),
+      agent: metadata.name,
+      action: 'submission',
+      status: 'pending review'
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Agent submission failed:', err);
+    res.status(500).json({ error: 'Failed to process submission' });
+  }
 });
 
 // Endpoint to execute a specific agent
