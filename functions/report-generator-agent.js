@@ -3,6 +3,37 @@
 const fs = require('fs');
 const path = require('path');
 
+const REPORTS_DIR = path.join(__dirname, '..', 'logs');
+const REPORTS_FILE = path.join(REPORTS_DIR, 'reports.json');
+
+function ensureReportsFile() {
+  if (!fs.existsSync(REPORTS_DIR)) {
+    fs.mkdirSync(REPORTS_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(REPORTS_FILE)) {
+    fs.writeFileSync(REPORTS_FILE, '[]', 'utf8');
+  }
+}
+
+function readReports() {
+  ensureReportsFile();
+  try {
+    return JSON.parse(fs.readFileSync(REPORTS_FILE, 'utf8'));
+  } catch (err) {
+    return [];
+  }
+}
+
+function writeReports(reports) {
+  fs.writeFileSync(REPORTS_FILE, JSON.stringify(reports, null, 2));
+}
+
+function appendReport(entry) {
+  const reports = readReports();
+  reports.push(entry);
+  writeReports(reports);
+}
+
 function formatSection(title, content) {
   return `### ${title}\n\n${content}\n`;
 }
@@ -26,11 +57,18 @@ module.exports = {
         return formatSection(`Output from ${agentName}`, summary);
       });
 
-      const markdownReport = `# 🧠 AI Transformation Report for ${clientName}\n\n` +
+      const markdownReport =
+        `# 🧠 AI Transformation Report for ${clientName}\n\n` +
         `**Generated:** ${timestamp()}\n\n` +
         `This report consolidates findings from multiple AI agents and outlines recommendations to enhance your business using automation and intelligence.\n\n` +
         sections.join('\n\n') +
         `\n---\n\n_Report compiled by AI Agent Systems._`;
+
+      appendReport({
+        timestamp: new Date().toISOString(),
+        clientName,
+        report: markdownReport,
+      });
 
       return { result: markdownReport };
 
