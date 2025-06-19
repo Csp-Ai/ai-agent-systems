@@ -13,6 +13,7 @@ const LandingPage = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [emailSent, setEmailSent] = useState(false);
   const hasSavedSession = sessionId && stepStatus.some(s => s !== 'pending');
 
   const fetchStatus = async (id) => {
@@ -56,6 +57,12 @@ const LandingPage = () => {
       localStorage.removeItem('sessionId');
     }
   }, [sessionId]);
+
+  useEffect(() => {
+    if (analysisComplete) {
+      sendReport();
+    }
+  }, [analysisComplete]);
 
   const analysisSteps = [
     { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows", duration: 3000 },
@@ -200,6 +207,7 @@ const LandingPage = () => {
     setCurrentStep(0);
     setAnalysisComplete(false);
     setAnalysisResult(null);
+    setEmailSent(false);
     const id = Date.now().toString();
     setSessionId(id);
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
@@ -212,12 +220,33 @@ const LandingPage = () => {
     setIsAnalyzing(true);
   };
 
+  const sendReport = async () => {
+    if (emailSent || !sessionId || !email) return;
+    try {
+      const endpoint =
+        process.env.NODE_ENV === 'production'
+          ? '/send-report'
+          : 'http://localhost:3000/send-report';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, email }),
+      });
+      if (res.ok) {
+        setEmailSent(true);
+      }
+    } catch (err) {
+      console.error('Failed to send report:', err);
+    }
+  };
+
   const resetAnalysis = () => {
     setIsAnalyzing(false);
     setAnalysisComplete(false);
     setCurrentStep(0);
     setShowPricing(false);
     setAnalysisResult(null);
+    setEmailSent(false);
     setStepStatus([]);
     setSessionId(null);
   };
