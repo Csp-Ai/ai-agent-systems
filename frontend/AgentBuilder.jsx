@@ -1,0 +1,156 @@
+import React, { useState, useEffect } from "react";
+import agentMetadata from "../agents/agent-metadata.json";
+
+export default function AgentBuilder() {
+  const availableAgents = Object.entries(agentMetadata).map(([id, meta]) => ({
+    id,
+    name: meta.name,
+    inputs: meta.inputs || {}
+  }));
+
+  const [pipeline, setPipeline] = useState(() => {
+    try {
+      const saved = localStorage.getItem("agentPipeline");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [logs, setLogs] = useState([]);
+  const [running, setRunning] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("agentPipeline", JSON.stringify(pipeline));
+  }, [pipeline]);
+
+  const handleAgentDragStart = (e, id) => {
+    e.dataTransfer.setData("agentId", id);
+  };
+
+  const handleAddDrop = e => {
+    e.preventDefault();
+    const id = e.dataTransfer.getData("agentId");
+    const agent = availableAgents.find(a => a.id === id);
+    if (agent) {
+      setPipeline([...pipeline, { id: agent.id, params: {} }]);
+    }
+  };
+
+  const handlePipelineDragStart = (e, index) => {
+    e.dataTransfer.setData("pipelineIndex", index.toString());
+  };
+
+  const handlePipelineDrop = (e, index) => {
+    e.preventDefault();
+    const from = parseInt(e.dataTransfer.getData("pipelineIndex"), 10);
+    if (isNaN(from)) return;
+    if (from === index) return;
+    const newPipeline = [...pipeline];
+    const [moved] = newPipeline.splice(from, 1);
+    newPipeline.splice(index, 0, moved);
+    setPipeline(newPipeline);
+  };
+
+  const updateParam = (stepIndex, key, value) => {
+    const newPipeline = [...pipeline];
+    newPipeline[stepIndex].params[key] = value;
+    setPipeline(newPipeline);
+  };
+
+  const runPipeline = async () => {
+    setRunning(true);
+    setLogs([]);
+    for (const step of pipeline) {
+      setLogs(prev => [...prev, `Running ${step.id}...`]);
+      try {
+        const res = await fetch("/run-agent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agent: step.id, input: step.params })
+        });
+        const data = await res.json();
+        if (data.error) {
+          setLogs(prev => [...prev, `${step.id} error: ${data.error}`]);
+        } else {
+          setLogs(prev => [...prev, `${step.id} result: ${JSON.stringify(data.result)}`]);
+        }
+      } catch (err) {
+        setLogs(prev => [...prev, `${step.id} failed: ${err.message}`]);
+      }
+    }
+    setRunning(false);
+  };
+
+  return (
+    <div className="p-6 text-white">
+      <h1 className="text-3xl font-bold mb-4">Agent Builder</h1>
+      <div className="flex gap-8">
+        <div className="w-1/3">
+          <h2 className="text-xl font-semibold mb-2">Available Agents</h2>
+          <ul>
+            {availableAgents.map(a => (
+              <li
+                key={a.id}
+                className="p-2 mb-2 bg-white/10 rounded cursor-move"
+                draggable
+                onDragStart={e => handleAgentDragStart(e, a.id)}
+              >
+                {a.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div
+          className="flex-1 min-h-[200px] p-4 bg-white/5 rounded"
+          onDragOver={e => e.preventDefault()}
+          onDrop={handleAddDrop}
+        >
+          <h2 className="text-xl font-semibold mb-2">Workflow Pipeline</h2>
+          {pipeline.length === 0 && <p className="text-gray-400">Drag agents here</p>}
+          {pipeline.map((step, idx) => {
+            const meta = availableAgents.find(a => a.id === step.id);
+            return (
+              <div
+                key={idx}
+                className="mb-4 p-2 bg-white/10 rounded"
+                draggable
+                onDragStart={e => handlePipelineDragStart(e, idx)}
+                onDrop={e => handlePipelineDrop(e, idx)}
+                onDragOver={e => e.preventDefault()}
+              >
+                <div className="font-semibold mb-1">{meta ? meta.name : step.id}</div>
+                {meta &&
+                  Object.keys(meta.inputs).map(key => (
+                    <input
+                      key={key}
+                      type="text"
+                      placeholder={key}
+                      value={step.params[key] || ""}
+                      onChange={e => updateParam(idx, key, e.target.value)}
+                      className="mb-1 w-full p-1 rounded bg-white/20"
+                    />
+                  ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {pipeline.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={runPipeline}
+            disabled={running}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            {running ? "Running..." : "Run Workflow"}
+          </button>
+        </div>
+      )}
+      {logs.length > 0 && (
+        <pre className="mt-4 bg-black/40 p-2 rounded text-green-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+          {logs.join("\n")}
+        </pre>
+      )}
+    </div>
+  );
+}
