@@ -49,13 +49,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Placeholder endpoint for orchestrating agents
-app.post('/run-agent', (req, res) => {
-  // Future agent orchestration logic will go here
-  return res.json({ message: 'Agent execution placeholder' });
-});
+// Object to hold loaded agents keyed by file name (without extension)
+const registeredAgents = {};
 
-// Load any agent modules from /agents (optional)
+// Load agents from /agents directory
 function loadAgents() {
   const agentsDir = path.join(__dirname, '..', 'agents');
   if (!fs.existsSync(agentsDir)) return;
@@ -63,17 +60,44 @@ function loadAgents() {
   fs.readdirSync(agentsDir).forEach((file) => {
     const modulePath = path.join(agentsDir, file);
     if (fs.statSync(modulePath).isFile() && file.endsWith('.js')) {
+      const agentName = path.basename(file, '.js');
       try {
         const agent = require(modulePath);
-        if (typeof agent === 'function') {
-          agent(app);
+        if (agent && typeof agent.run === 'function') {
+          registeredAgents[agentName] = agent;
+          console.log(`Loaded agent: ${agentName}`);
+        } else {
+          console.warn(`Agent ${agentName} does not export a run() function`);
         }
       } catch (err) {
-        console.error(`Failed to load agent ${file}:`, err);
+        console.error(`Failed to load agent ${agentName}:`, err);
       }
     }
   });
 }
+
+// Endpoint to execute a specific agent
+app.post('/run-agent', async (req, res) => {
+  const { agent: agentName, input } = req.body || {};
+
+  if (!agentName) {
+    return res.status(400).json({ error: 'Agent name not provided' });
+  }
+
+  const agent = registeredAgents[agentName];
+
+  if (!agent) {
+    return res.status(404).json({ error: `Agent '${agentName}' not found` });
+  }
+
+  try {
+    const result = await Promise.resolve(agent.run(input));
+    return res.json({ result });
+  } catch (err) {
+    console.error(`Agent '${agentName}' failed to run:`, err);
+    return res.status(500).json({ error: 'Agent execution failed', details: err.message });
+  }
+});
 
 loadAgents();
 
