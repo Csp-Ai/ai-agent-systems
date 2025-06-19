@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node functions/index.js",
-    "test": "echo \"No tests configured yet\" && exit 0"
+    "test": "echo \"No tests configured yet\" && exit 0",
+    "monitor": "node scripts/agentHealthMonitor.js"
   },
   "keywords": [
     "AI",
