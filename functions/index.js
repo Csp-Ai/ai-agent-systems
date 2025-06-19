@@ -15,6 +15,8 @@ app.use(express.json());
 
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'logs.json');
+const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
+const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 
 // Ensure log directory and file exist
 function ensureLogFile() {
@@ -45,6 +47,58 @@ function appendLog(entry) {
   writeLogs(logs);
 }
 
+function ensureSessionFiles() {
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(SESSION_STATUS_FILE)) {
+    fs.writeFileSync(SESSION_STATUS_FILE, '{}', 'utf8');
+  }
+  if (!fs.existsSync(SESSION_LOG_DIR)) {
+    fs.mkdirSync(SESSION_LOG_DIR, { recursive: true });
+  }
+}
+
+function readSessionStatus() {
+  ensureSessionFiles();
+  try {
+    return JSON.parse(fs.readFileSync(SESSION_STATUS_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function writeSessionStatus(data) {
+  fs.writeFileSync(SESSION_STATUS_FILE, JSON.stringify(data, null, 2));
+}
+
+function updateSession(sessionId, step, agent, status) {
+  const sessions = readSessionStatus();
+  if (!sessions[sessionId]) sessions[sessionId] = [];
+  const idx = sessions[sessionId].findIndex(s => s.step === step && s.agent === agent);
+  if (idx !== -1) {
+    sessions[sessionId][idx].status = status;
+  } else {
+    sessions[sessionId].push({ step, agent, status });
+  }
+  writeSessionStatus(sessions);
+}
+
+function appendSessionLog(sessionId, entry) {
+  ensureSessionFiles();
+  const file = path.join(SESSION_LOG_DIR, `${sessionId}.json`);
+  let logs = [];
+  if (fs.existsSync(file)) {
+    try {
+      logs = JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch {
+      logs = [];
+    }
+  }
+  logs.push(entry);
+  fs.writeFileSync(file, JSON.stringify(logs, null, 2));
+}
+
 // Append request info to log file
 function logRequest(req) {
   appendLog({
@@ -66,7 +120,7 @@ const registeredAgents = loadAgents();
 
 // Endpoint to execute a specific agent
 app.post('/run-agent', async (req, res) => {
-  const { agent: agentName, input = {} } = req.body || {};
+  const { agent: agentName, input = {}, sessionId, step } = req.body || {};
 
   if (!agentName) {
     appendLog({
@@ -132,7 +186,18 @@ app.post('/run-agent', async (req, res) => {
   }
 
   try {
+    if (sessionId !== undefined && step !== undefined) {
+      updateSession(sessionId, step, agentName, 'active');
+      appendSessionLog(sessionId, { timestamp: new Date().toISOString(), step, agent: agentName, status: 'active', input });
+    }
+
     const result = await Promise.resolve(agent.run(input));
+
+    if (sessionId !== undefined && step !== undefined) {
+      updateSession(sessionId, step, agentName, 'completed');
+      appendSessionLog(sessionId, { timestamp: new Date().toISOString(), step, agent: agentName, status: 'completed', output: result });
+    }
+
     appendLog({
       timestamp: new Date().toISOString(),
       agent: agentName,
@@ -141,6 +206,10 @@ app.post('/run-agent', async (req, res) => {
     });
     return res.json({ result });
   } catch (err) {
+    if (sessionId !== undefined && step !== undefined) {
+      updateSession(sessionId, step, agentName, 'failed');
+      appendSessionLog(sessionId, { timestamp: new Date().toISOString(), step, agent: agentName, status: 'failed', error: err.message });
+    }
     console.error(`Agent '${agentName}' failed to run:`, err);
     appendLog({
       timestamp: new Date().toISOString(),
@@ -150,6 +219,14 @@ app.post('/run-agent', async (req, res) => {
     });
     return res.status(500).json({ error: 'Agent execution failed', details: err.message });
   }
+});
+
+// Endpoint to fetch current session status
+app.get('/status/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const sessions = readSessionStatus();
+  const data = sessions[sessionId] || [];
+  res.json(data);
 });
 
 const PORT = process.env.PORT || 3000;

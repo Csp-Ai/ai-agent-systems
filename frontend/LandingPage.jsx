@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Zap, Brain, FileText, CheckCircle, ArrowRight, Users, TrendingUp, Clock, Shield, Star, ChevronDown, Play, Pause, RotateCcw } from 'lucide-react';
+import AgentTracker from './AgentTracker.jsx';
 
 const LandingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [sessionId, setSessionId] = useState(null);
+  const [stepStatus, setStepStatus] = useState([]);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -67,21 +70,86 @@ const LandingPage = () => {
   ];
 
   useEffect(() => {
-    if (isAnalyzing && currentStep < analysisSteps.length) {
+    if (isAnalyzing && currentStep < analysisSteps.length && sessionId) {
+      const step = analysisSteps[currentStep];
+      setStepStatus(prev => {
+        const arr = prev.length ? [...prev] : analysisSteps.map(() => 'pending');
+        arr[currentStep] = 'active';
+        return arr;
+      });
+
+      const runStep = async () => {
+        const endpoint =
+          process.env.NODE_ENV === 'production'
+            ? '/run-agent'
+            : 'http://localhost:3000/run-agent';
+
+        try {
+          await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              agent: 'insights-agent',
+              input: { companyName, websiteUrl, email },
+              sessionId,
+              step: currentStep,
+            }),
+          });
+
+          setStepStatus(prev => {
+            const arr = [...prev];
+            arr[currentStep] = 'completed';
+            if (currentStep + 1 < arr.length) {
+              arr[currentStep + 1] = 'active';
+            }
+            return arr;
+          });
+        } catch (error) {
+          console.error('Error running agent:', error);
+        }
+      };
+
+      runStep();
+
       const timer = setTimeout(() => {
         setCurrentStep(prev => prev + 1);
-      }, analysisSteps[currentStep]?.duration || 3000);
+      }, step?.duration || 3000);
 
       if (currentStep === analysisSteps.length - 1) {
         setTimeout(() => {
           setAnalysisComplete(true);
           setIsAnalyzing(false);
-        }, 2500);
+        }, step?.duration || 2500);
       }
 
       return () => clearTimeout(timer);
     }
-  }, [isAnalyzing, currentStep]);
+  }, [isAnalyzing, currentStep, sessionId]);
+
+  // Poll session status from backend
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(async () => {
+      try {
+        const endpoint =
+          process.env.NODE_ENV === 'production'
+            ? `/status/${sessionId}`
+            : `http://localhost:3000/status/${sessionId}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const updated = analysisSteps.map((_, i) => {
+            const step = data.find(s => s.step === i);
+            return step ? step.status : 'pending';
+          });
+          setStepStatus(updated);
+        }
+      } catch (err) {
+        console.error('Polling status failed:', err);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
 
   const handleAnalyze = async () => {
     if (!websiteUrl || !email || !companyName) return;
@@ -89,30 +157,9 @@ const LandingPage = () => {
     setCurrentStep(0);
     setAnalysisComplete(false);
     setAnalysisResult(null);
-
-    const endpoint =
-      process.env.NODE_ENV === "production"
-        ? "/run-agent"
-        : "http://localhost:3000/run-agent";
-
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agent: "insights-agent",
-          input: { companyName, websiteUrl, email },
-        }),
-      });
-
-      const data = await response.json();
-      console.log("Agent response:", data);
-      if (data && typeof data.result !== 'undefined') {
-        setAnalysisResult(data.result);
-      }
-    } catch (error) {
-      console.error("Error running agent:", error);
-    }
+    const id = Date.now().toString();
+    setSessionId(id);
+    setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
   const resetAnalysis = () => {
@@ -209,35 +256,11 @@ const LandingPage = () => {
                     </div>
                   </div>
                   
-                  {analysisSteps.map((step, index) => {
-                    const Icon = step.icon;
-                    const isActive = index === currentStep;
-                    const isComplete = index < currentStep;
-                    
-                    return (
-                      <div key={index} className={`flex items-center space-x-4 p-4 rounded-lg transition-all duration-500 ${
-                        isActive ? 'bg-blue-500/20 border border-blue-400' : 
-                        isComplete ? 'bg-green-500/20 border border-green-400' : 
-                        'bg-white/10 border border-white/20'
-                      }`}>
-                        <div className={`p-2 rounded-full ${
-                          isActive ? 'bg-blue-500 animate-pulse' : 
-                          isComplete ? 'bg-green-500' : 
-                          'bg-gray-500'
-                        }`}>
-                          {isComplete ? (
-                            <CheckCircle className="h-6 w-6 text-white" />
-                          ) : (
-                            <Icon className="h-6 w-6 text-white" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-white">{step.title}</h4>
-                          <p className="text-sm text-gray-300">{step.description}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <AgentTracker
+                    steps={analysisSteps.map(s => s.title)}
+                    currentStep={currentStep}
+                    status={stepStatus}
+                  />
                 </div>
               )}
 
