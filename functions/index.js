@@ -84,18 +84,19 @@ function updateSession(sessionId, step, agent, status) {
   writeSessionStatus(sessions);
 }
 
-function appendSessionLog(sessionId, entry) {
+function saveSessionLog(sessionId, data) {
   ensureSessionFiles();
   const file = path.join(SESSION_LOG_DIR, `${sessionId}.json`);
   let logs = [];
   if (fs.existsSync(file)) {
     try {
       logs = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(logs)) logs = [];
     } catch {
       logs = [];
     }
   }
-  logs.push(entry);
+  logs.push(data);
   fs.writeFileSync(file, JSON.stringify(logs, null, 2));
 }
 
@@ -188,14 +189,14 @@ app.post('/run-agent', async (req, res) => {
   try {
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'active');
-      appendSessionLog(sessionId, { timestamp: new Date().toISOString(), step, agent: agentName, status: 'active', input });
+      saveSessionLog(sessionId, { timestamp: new Date().toISOString(), clientName: input.clientName, step, agent: agentName, status: 'active', input });
     }
 
     const result = await Promise.resolve(agent.run(input));
 
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'completed');
-      appendSessionLog(sessionId, { timestamp: new Date().toISOString(), step, agent: agentName, status: 'completed', output: result });
+      saveSessionLog(sessionId, { timestamp: new Date().toISOString(), clientName: input.clientName, step, agent: agentName, status: 'completed', output: result });
     }
 
     appendLog({
@@ -208,7 +209,7 @@ app.post('/run-agent', async (req, res) => {
   } catch (err) {
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'failed');
-      appendSessionLog(sessionId, { timestamp: new Date().toISOString(), step, agent: agentName, status: 'failed', error: err.message });
+      saveSessionLog(sessionId, { timestamp: new Date().toISOString(), clientName: input.clientName, step, agent: agentName, status: 'failed', error: err.message });
     }
     console.error(`Agent '${agentName}' failed to run:`, err);
     appendLog({
