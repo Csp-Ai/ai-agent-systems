@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import ReactFlow, { Background, Controls } from "reactflow";
+import ReactFlow, { Background, Controls, MarkerType } from "reactflow";
 import "reactflow/dist/style.css";
 import agentMetadata from "../agents/agent-metadata.json";
 
@@ -21,6 +21,17 @@ export default function AgentBuilder() {
   const [logs, setLogs] = useState([]);
   const [running, setRunning] = useState(false);
 
+  const collectDependencies = (id, visited = new Set()) => {
+    if (visited.has(id)) return [];
+    visited.add(id);
+    const deps = agentMetadata[id]?.dependsOn || [];
+    let result = [];
+    deps.forEach(dep => {
+      result = [...result, ...collectDependencies(dep, visited), dep];
+    });
+    return result;
+  };
+
   const nodes = useMemo(
     () =>
       pipeline.map((step, idx) => {
@@ -41,7 +52,13 @@ export default function AgentBuilder() {
       deps.forEach(dep => {
         const depIdx = pipeline.findIndex(p => p.id === dep);
         if (depIdx !== -1) {
-          arr.push({ id: `${depIdx}-${idx}`, source: String(depIdx), target: String(idx), animated: true });
+          arr.push({
+            id: `${depIdx}-${idx}`,
+            source: String(depIdx),
+            target: String(idx),
+            animated: true,
+            markerEnd: { type: MarkerType.ArrowClosed }
+          });
         }
       });
     });
@@ -59,10 +76,23 @@ export default function AgentBuilder() {
   const handleAddDrop = e => {
     e.preventDefault();
     const id = e.dataTransfer.getData("agentId");
-    const agent = availableAgents.find(a => a.id === id);
-    if (agent) {
-      setPipeline([...pipeline, { id: agent.id, params: {} }]);
-    }
+    if (!id) return;
+    const newPipeline = [...pipeline];
+
+    const addWithDeps = agentId => {
+      const deps = collectDependencies(agentId);
+      deps.forEach(dep => {
+        if (!newPipeline.some(p => p.id === dep)) {
+          newPipeline.push({ id: dep, params: {} });
+        }
+      });
+      if (!newPipeline.some(p => p.id === agentId)) {
+        newPipeline.push({ id: agentId, params: {} });
+      }
+    };
+
+    addWithDeps(id);
+    setPipeline(newPipeline);
   };
 
   const handlePipelineDragStart = (e, index) => {
