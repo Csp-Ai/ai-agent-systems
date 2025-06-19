@@ -51,9 +51,6 @@ function validateToken(token) {
   return data.email;
 }
 
-const PUBLIC_REPORTS_DIR = path.join(__dirname, '..', 'reports');
-app.use('/reports', express.static(PUBLIC_REPORTS_DIR));
-
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'logs.json');
 const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
