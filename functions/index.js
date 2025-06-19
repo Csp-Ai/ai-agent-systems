@@ -302,6 +302,8 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')
 
 // Serve client portal assets
 app.use('/client', express.static(path.join(__dirname, '..', 'frontend', 'client')));
+// Serve strategy board assets
+app.use('/board', express.static(path.join(__dirname, '..', 'frontend', 'board')));
 
 // Serve generated PDF reports from logs/reports
 app.use('/reports', express.static('logs/reports'));
@@ -560,6 +562,33 @@ app.get('/viewer', (req, res) => {
     <script type="text/babel">ReactDOM.render(<PublicViewer url={window.reportUrl} />, document.getElementById('root'));</script>
   </body>
   </html>`);
+});
+
+// Strategy board dashboard
+app.get('/strategy-board', async (req, res) => {
+  try {
+    const boardAgent = require('../agents/board-agent');
+    const data = await boardAgent.run();
+    res.send(`<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Strategy Board</title>
+      <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+      <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+      <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+      <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-900">
+      <div id="root"></div>
+      <script>window.boardData = ${JSON.stringify(data)};</script>
+      <script type="text/babel" src="/board/StrategyBoard.jsx"></script>
+      <script type="text/babel">ReactDOM.render(<StrategyBoard data={window.boardData} />, document.getElementById('root'));</script>
+    </body>
+    </html>`);
+  } catch (err) {
+    res.status(500).send('Failed to render board');
+  }
 });
 
 // Return recent audit logs

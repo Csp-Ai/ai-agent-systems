@@ -91,5 +91,21 @@
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19"
+  },
+  "board-agent": {
+    "name": "Strategy Board Agent",
+    "description": "Aggregates mentor metrics and logs to provide governance recommendations.",
+    "inputs": {},
+    "outputs": {
+      "agents": "array",
+      "growth": "array",
+      "recommendations": "array",
+      "mentorSummary": "string"
+    },
+    "category": "Governance",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19"
   }
 }
