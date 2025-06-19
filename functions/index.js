@@ -10,7 +10,11 @@ const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
-const { logAgentAction, readAuditLogs, appendAuditLog } = require('./auditLogger');
+const {
+  logAgentAction,
+  readAuditLogs,
+  appendAuditLog,
+} = require('./auditLogger');
 
 // Load environment variables from .env if present
 dotenv.config();
