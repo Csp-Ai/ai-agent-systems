@@ -18,6 +18,23 @@
     "lastUpdated": "2025-06-19"
   },
 
+  "report-generator-agent": {
+    "name": "Report Generator",
+    "description": "Compiles outputs from all agents into a structured Markdown summary for clients.",
+    "inputs": {
+      "results": "array",
+      "clientName": "string"
+    },
+    "outputs": {
+      "result": "markdown"
+    },
+    "category": "Documentation",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19"
+  },
+
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
     "description": "Scrapes homepage content and meta tags to extract structure and keywords.",
