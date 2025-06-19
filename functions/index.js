@@ -462,6 +462,40 @@ app.get('/client/login', (req, res) => {
   </html>`);
 });
 
+// Decode share token and redirect to viewer
+app.get('/share/:token', (req, res) => {
+  try {
+    const decoded = Buffer.from(req.params.token, 'base64').toString('utf8');
+    return res.redirect(`/viewer?file=${encodeURIComponent(decoded)}`);
+  } catch {
+    return res.status(400).send('Invalid token');
+  }
+});
+
+// Public viewer page (read-only)
+app.get('/viewer', (req, res) => {
+  const file = req.query.file || '';
+  if (!file.startsWith('/reports/')) return res.status(400).send('Invalid file');
+
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Shared Report</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-900">
+    <div id="root"></div>
+    <script>window.reportUrl = ${JSON.stringify(file)};</script>
+    <script type="text/babel" src="/client/PublicViewer.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<PublicViewer url={window.reportUrl} />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
+});
+
 // Endpoint to fetch current session status
 app.get('/status/:sessionId', (req, res) => {
   const { sessionId } = req.params;
