@@ -10,6 +10,7 @@ const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
+const { translateText } = require('./translate');
 const { logAgentAction, readAuditLogs, appendAuditLog } = require('./auditLogger');
 
 // Load environment variables from .env if present
@@ -244,7 +245,13 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       });
     }
 
-    const result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
+    let result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
+
+    const targetLocale = (input.locale || 'en').slice(0, 2);
+    const supportedLocales = metadata.locales || ['en'];
+    if (result && result.summary && targetLocale !== 'en' && supportedLocales.includes(targetLocale)) {
+      result.summary = await translateText(result.summary, targetLocale);
+    }
 
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'completed');

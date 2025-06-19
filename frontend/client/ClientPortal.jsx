@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { detectLocale, t } from './i18n';
 
 export default function ClientPortal({ reports = [] }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('Reports');
+  const [activeTab, setActiveTab] = useState('reports');
   const [feed, setFeed] = useState([]);
+  const [locale, setLocale] = useState('en');
 
   useEffect(() => {
+    setLocale(detectLocale());
     const fetchLogs = async () => {
       try {
         const res = await fetch('/audit?limit=20');
@@ -64,15 +67,15 @@ export default function ClientPortal({ reports = [] }) {
         </button>
         {sidebarOpen && (
           <ul className="mt-4 space-y-2">
-            {['Reports', 'Activity', 'Billing'].map((tab) => (
-              <li key={tab}>
+            {['reports', 'activity', 'billing'].map((key) => (
+              <li key={key}>
                 <button
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => setActiveTab(key)}
                   className={`w-full text-left px-3 py-1 rounded hover:bg-gray-700 transition-colors ${
-                    activeTab === tab ? 'font-bold' : ''
+                    activeTab === key ? 'font-bold' : ''
                   }`}
                 >
-                  {tab}
+                  {t(locale, key)}
                 </button>
               </li>
             ))}
@@ -80,11 +83,11 @@ export default function ClientPortal({ reports = [] }) {
         )}
       </div>
       <div className="flex-1 p-6">
-        {activeTab === 'Reports' && (
+        {activeTab === 'reports' && (
           <div>
-            <h1 className="text-2xl font-bold mb-4">Your Reports</h1>
+            <h1 className="text-2xl font-bold mb-4">{t(locale, 'yourReports')}</h1>
             {reports.length === 0 ? (
-              <p>No reports available.</p>
+              <p>{t(locale, 'noReports')}</p>
             ) : (
               <ul className="list-disc pl-5 space-y-2">
                 {reports.map((link, idx) => (
@@ -93,10 +96,10 @@ export default function ClientPortal({ reports = [] }) {
                       {link.split('/').pop()}
                     </a>
                     <button onClick={() => exportZip(link)} className="text-sm text-green-400 underline">
-                      Export to ZIP
+                      {t(locale, 'exportZip')}
                     </button>
                     <button onClick={() => copyLink(link)} className="text-sm text-yellow-400 underline">
-                      Copy Shareable Link
+                      {t(locale, 'copyShareLink')}
                     </button>
                   </li>
                 ))}
@@ -105,9 +108,9 @@ export default function ClientPortal({ reports = [] }) {
           </div>
         )}
 
-        {activeTab === 'Activity' && (
+        {activeTab === 'activity' && (
           <div>
-            <h1 className="text-2xl font-bold mb-4">Recent Activity</h1>
+            <h1 className="text-2xl font-bold mb-4">{t(locale, 'recentActivity')}</h1>
             <ul className="space-y-2">
               {feed.map((item, idx) => (
                 <li
@@ -124,10 +127,10 @@ export default function ClientPortal({ reports = [] }) {
           </div>
         )}
 
-        {activeTab === 'Billing' && (
+        {activeTab === 'billing' && (
           <div>
-            <h1 className="text-2xl font-bold mb-4">Billing</h1>
-            <p>Billing information coming soon.</p>
+            <h1 className="text-2xl font-bold mb-4">{t(locale, 'billing')}</h1>
+            <p>{t(locale, 'billingSoon')}</p>
           </div>
         )}
       </div>
