@@ -22,6 +22,8 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
-    "html2pdf.js": "^0.10.3"
+    "html2pdf.js": "^0.10.3",
+    "nodemailer": "^6.9.1",
+    "pdfkit": "^0.13.0"
   }
 }

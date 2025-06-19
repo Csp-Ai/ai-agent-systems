@@ -3,6 +3,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
+const nodemailer = require('nodemailer');
+const PDFDocument = require('pdfkit');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
 
@@ -219,6 +221,54 @@ app.post('/run-agent', async (req, res) => {
       error: err.message,
     });
     return res.status(500).json({ error: 'Agent execution failed', details: err.message });
+  }
+});
+
+// Endpoint to email report as PDF attachment
+app.post('/send-report', async (req, res) => {
+  const { email, report = '' } = req.body || {};
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  try {
+    const pdfBuffer = await new Promise((resolve, reject) => {
+      const doc = new PDFDocument();
+      const buffers = [];
+      doc.on('data', b => buffers.push(b));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+      doc.text(report || 'AI Agent Report');
+      doc.end();
+    });
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
+      to: email,
+      subject: 'Your AI Agent Report',
+      text: 'Please find your AI agent report attached.',
+      attachments: [
+        {
+          filename: 'report.pdf',
+          content: pdfBuffer,
+        },
+      ],
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Failed to send report email:', err);
+    res.status(500).json({ error: 'Failed to send email' });
   }
 });
 

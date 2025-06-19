@@ -13,6 +13,7 @@ const LandingPage = () => {
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [emailSent, setEmailSent] = useState(false);
 
   const analysisSteps = [
     { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows", duration: 3000 },
@@ -151,6 +152,28 @@ const LandingPage = () => {
     return () => clearInterval(interval);
   }, [sessionId]);
 
+  // Send report email when analysis completes
+  useEffect(() => {
+    if (!analysisComplete || emailSent) return;
+    const sendReport = async () => {
+      try {
+        const endpoint =
+          process.env.NODE_ENV === 'production'
+            ? '/send-report'
+            : 'http://localhost:3000/send-report';
+        await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, report: analysisResult || '' }),
+        });
+        setEmailSent(true);
+      } catch (err) {
+        console.error('Email send failed:', err);
+      }
+    };
+    sendReport();
+  }, [analysisComplete]);
+
   const handleAnalyze = async () => {
     if (!websiteUrl || !email || !companyName) return;
     setIsAnalyzing(true);
@@ -168,6 +191,7 @@ const LandingPage = () => {
     setCurrentStep(0);
     setShowPricing(false);
     setAnalysisResult(null);
+    setEmailSent(false);
   };
 
   return (
@@ -296,10 +320,15 @@ const LandingPage = () => {
                         <span>Data analysis & reporting streamlining</span>
                       </li>
                     </ul>
-                    {analysisResult && (
+                  {analysisResult && (
                       <pre className="mt-4 text-gray-300 whitespace-pre-wrap">
                         {analysisResult}
                       </pre>
+                    )}
+                    {emailSent && (
+                      <div className="mt-2 text-green-400 font-semibold text-center">
+                        Email Sent!
+                      </div>
                     )}
                   </div>
 
