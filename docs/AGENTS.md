@@ -97,3 +97,15 @@ Agent actions are also recorded in `logs/audit.json` with the timestamp, session
 4. Run `npm test` to execute any configured tests.
 
 Following this structure keeps new agents consistent and ensures they can be loaded by the backend.
+
+## Website Scanner Agent
+
+The `website-scanner-agent` demonstrates a data extraction agent. It requires a `url` input and returns parsed metadata, headings, Open Graph tags and link structure.
+
+Example request:
+
+```bash
+curl -X POST http://localhost:3000/run-agent \
+     -H "Content-Type: application/json" \
+     -d '{"agent":"website-scanner-agent","input":{"url":"https://example.com"}}'
+```

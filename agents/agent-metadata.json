@@ -39,17 +39,17 @@
 
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
-    "description": "Scrapes homepage content and meta tags to extract structure and keywords.",
-    "inputs": {
-      "websiteUrl": "url"
-    },
+    "description": "Fetches a website URL and extracts metadata, heading tags, Open Graph tags, and link structure.",
+    "inputs": { "url": "url" },
     "outputs": {
-      "keywords": "array",
-      "structureMap": "object"
+      "metadata": "object",
+      "headings": "object",
+      "openGraph": "object",
+      "links": "object"
     },
     "category": "Data Extraction",
-    "enabled": false,
-    "version": "0.1.0",
+    "enabled": true,
+    "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19"
   }
