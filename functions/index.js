@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const loadAgents = require('./loadAgents');
+const agentMetadata = require('../agents/agent-metadata.json');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -65,7 +66,7 @@ const registeredAgents = loadAgents();
 
 // Endpoint to execute a specific agent
 app.post('/run-agent', async (req, res) => {
-  const { agent: agentName, input } = req.body || {};
+  const { agent: agentName, input = {} } = req.body || {};
 
   if (!agentName) {
     appendLog({
@@ -77,6 +78,45 @@ app.post('/run-agent', async (req, res) => {
     return res.status(400).json({ error: 'Agent name not provided' });
   }
 
+  const metadata = agentMetadata[agentName];
+
+  if (!metadata) {
+    appendLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      input,
+      error: `Agent '${agentName}' not found in metadata`,
+    });
+    return res.status(400).json({ error: `Agent '${agentName}' not found` });
+  }
+
+  if (!metadata.enabled) {
+    appendLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      input,
+      error: `Agent '${agentName}' is disabled`,
+    });
+    return res.status(400).json({ error: `Agent '${agentName}' is disabled` });
+  }
+
+  const expectedInputs = metadata.inputs || {};
+  const missingInputs = Object.keys(expectedInputs).filter(
+    (key) => !(key in input)
+  );
+
+  if (missingInputs.length > 0) {
+    appendLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      input,
+      error: `Missing required inputs: ${missingInputs.join(', ')}`,
+    });
+    return res
+      .status(400)
+      .json({ error: 'Missing required inputs', missing: missingInputs });
+  }
+
   const agent = registeredAgents[agentName];
 
   if (!agent) {
@@ -84,9 +124,11 @@ app.post('/run-agent', async (req, res) => {
       timestamp: new Date().toISOString(),
       agent: agentName,
       input,
-      error: `Agent '${agentName}' not found`,
+      error: `Agent '${agentName}' implementation not found`,
     });
-    return res.status(404).json({ error: `Agent '${agentName}' not found` });
+    return res
+      .status(404)
+      .json({ error: `Agent '${agentName}' implementation not found` });
   }
 
   try {
