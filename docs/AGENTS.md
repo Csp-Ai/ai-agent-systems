@@ -43,6 +43,7 @@ Every agent must have an entry in `agents/agent-metadata.json`. A typical entry 
   "description": "Explains what the agent does.",
   "inputs": { "someInput": "string" },
   "outputs": { "result": "string" },
+  "dependsOn": ["other-agent"],
   "category": "Utility",
   "enabled": true,
   "version": "1.0.0",
@@ -52,6 +53,7 @@ Every agent must have an entry in `agents/agent-metadata.json`. A typical entry 
 ```
 
 Fields like `inputs` and `outputs` describe the expected shape of the request and response. `enabled` controls whether the API will allow execution.
+`dependsOn` is an optional array listing other agents that must run before this one. The backend resolves these dependencies and executes agents in order.
 
 ## API Usage
 

@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import ReactFlow, { Background, Controls } from "reactflow";
+import "reactflow/dist/style.css";
 import agentMetadata from "../agents/agent-metadata.json";
 
 export default function AgentBuilder() {
@@ -18,6 +20,33 @@ export default function AgentBuilder() {
   });
   const [logs, setLogs] = useState([]);
   const [running, setRunning] = useState(false);
+
+  const nodes = useMemo(
+    () =>
+      pipeline.map((step, idx) => {
+        const meta = agentMetadata[step.id] || {};
+        return {
+          id: String(idx),
+          data: { label: meta.name || step.id },
+          position: { x: idx * 200, y: 0 }
+        };
+      }),
+    [pipeline]
+  );
+
+  const edges = useMemo(() => {
+    const arr = [];
+    pipeline.forEach((step, idx) => {
+      const deps = agentMetadata[step.id]?.dependsOn || [];
+      deps.forEach(dep => {
+        const depIdx = pipeline.findIndex(p => p.id === dep);
+        if (depIdx !== -1) {
+          arr.push({ id: `${depIdx}-${idx}`, source: String(depIdx), target: String(idx), animated: true });
+        }
+      });
+    });
+    return arr;
+  }, [pipeline]);
 
   useEffect(() => {
     localStorage.setItem("agentPipeline", JSON.stringify(pipeline));
@@ -135,6 +164,14 @@ export default function AgentBuilder() {
           })}
         </div>
       </div>
+      {pipeline.length > 0 && (
+        <div className="h-64 my-4 bg-white/10 rounded">
+          <ReactFlow nodes={nodes} edges={edges} fitView>
+            <Background />
+            <Controls />
+          </ReactFlow>
+        </div>
+      )}
       {pipeline.length > 0 && (
         <div className="mt-4">
           <button
