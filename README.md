@@ -63,3 +63,7 @@ npm install
 
 # Run development server
 npm start
+
+## Submitting Agents
+
+Developers can contribute new agents through the web form at `/submit-agent`. The form accepts metadata and a `.js` file. A dry run option validates your submission without saving. Successful uploads are stored in `pending-agents/` and logged to `logs/agent-submissions.json`.

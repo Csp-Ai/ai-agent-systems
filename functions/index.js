@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
 const { logAgentAction, readAuditLogs } = require('./auditLogger');
+const multer = require('multer');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -23,6 +24,7 @@ function isAuthorized(req) {
 const app = express();
 app.use(cors());
 app.use(express.json());
+const upload = multer({ storage: multer.memoryStorage() });
 
 // In-memory store for login tokens
 const loginTokens = new Map();
@@ -52,6 +54,8 @@ const LOG_FILE = path.join(LOG_DIR, 'logs.json');
 const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
+const PENDING_DIR = path.join(__dirname, '..', 'pending-agents');
+const SUBMISSION_LOG = path.join(LOG_DIR, 'agent-submissions.json');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -85,6 +89,33 @@ function appendLog(entry) {
   const logs = readLogs();
   logs.push(entry);
   writeLogs(logs);
+}
+
+function ensureSubmissionStorage() {
+  if (!fs.existsSync(PENDING_DIR)) {
+    fs.mkdirSync(PENDING_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(LOG_DIR)) {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(SUBMISSION_LOG)) {
+    fs.writeFileSync(SUBMISSION_LOG, '[]', 'utf8');
+  }
+}
+
+function readSubmissionLog() {
+  ensureSubmissionStorage();
+  try {
+    return JSON.parse(fs.readFileSync(SUBMISSION_LOG, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function appendSubmissionLog(entry) {
+  const data = readSubmissionLog();
+  data.push(entry);
+  fs.writeFileSync(SUBMISSION_LOG, JSON.stringify(data, null, 2));
 }
 
 function ensureSessionFiles() {
@@ -299,6 +330,8 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')
 
 // Serve client portal assets
 app.use('/client', express.static(path.join(__dirname, '..', 'frontend', 'client')));
+// Serve agent submission assets
+app.use('/submit-agent', express.static(path.join(__dirname, '..', 'frontend', 'submission')));
 
 // Serve generated PDF reports from logs/reports
 app.use('/reports', express.static('logs/reports'));
@@ -443,6 +476,90 @@ app.post('/client/send-link', async (req, res) => {
     console.error('Failed to send login link:', err);
     res.status(500).json({ error: 'Failed to send email' });
   }
+});
+
+// Render agent submission form
+app.get('/submit-agent', (req, res) => {
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Submit Agent</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-900">
+    <div id="root"></div>
+    <script type="text/babel" src="/submit-agent/AgentSubmissionForm.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<AgentSubmissionForm />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
+});
+
+app.get('/submit-agent/success', (req, res) => {
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Submission Success</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-900">
+    <div id="root"></div>
+    <script type="text/babel" src="/submit-agent/AgentSubmissionSuccess.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<AgentSubmissionSuccess />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
+});
+
+// Receive agent submission
+app.post('/submit-agent', upload.single('file'), (req, res) => {
+  const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
+  const { name = '', description = '', category = '', inputs = '{}', outputs = '{}' } = req.body || {};
+
+  if (!name || !description || !category) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  let inputsObj, outputsObj;
+  try { inputsObj = JSON.parse(inputs || '{}'); } catch { return res.status(400).json({ error: 'Invalid inputs JSON' }); }
+  try { outputsObj = JSON.parse(outputs || '{}'); } catch { return res.status(400).json({ error: 'Invalid outputs JSON' }); }
+
+  if (!req.file) return res.status(400).json({ error: 'Agent file required' });
+
+  ensureSubmissionStorage();
+
+  const id = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '');
+  const jsPath = path.join(PENDING_DIR, `${id}.js`);
+  const metaPath = path.join(PENDING_DIR, `${id}.json`);
+
+  fs.writeFileSync(jsPath, req.file.buffer);
+
+  try {
+    const mod = require(jsPath);
+    if (typeof mod.run !== 'function') throw new Error('run() function not found');
+    delete require.cache[require.resolve(jsPath)];
+  } catch (err) {
+    fs.unlinkSync(jsPath);
+    return res.status(400).json({ error: `Invalid agent file: ${err.message}` });
+  }
+
+  const metadata = { name, description, category, inputs: inputsObj, outputs: outputsObj };
+
+  if (dryRun) {
+    fs.unlinkSync(jsPath);
+    return res.json({ success: true, dryRun: true });
+  }
+
+  fs.writeFileSync(metaPath, JSON.stringify(metadata, null, 2));
+  appendSubmissionLog({ timestamp: new Date().toISOString(), agent: id, metadata });
+
+  res.json({ success: true, agent: id });
 });
 
 // Validate token and render portal
