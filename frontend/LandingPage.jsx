@@ -9,6 +9,7 @@ const LandingPage = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
 
   const analysisSteps = [
     { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows", duration: 3000 },
@@ -87,6 +88,7 @@ const LandingPage = () => {
     setIsAnalyzing(true);
     setCurrentStep(0);
     setAnalysisComplete(false);
+    setAnalysisResult(null);
 
     const endpoint =
       process.env.NODE_ENV === "production"
@@ -105,6 +107,9 @@ const LandingPage = () => {
 
       const data = await response.json();
       console.log("Agent response:", data);
+      if (data && typeof data.result !== 'undefined') {
+        setAnalysisResult(data.result);
+      }
     } catch (error) {
       console.error("Error running agent:", error);
     }
@@ -115,6 +120,7 @@ const LandingPage = () => {
     setAnalysisComplete(false);
     setCurrentStep(0);
     setShowPricing(false);
+    setAnalysisResult(null);
   };
 
   return (
@@ -267,6 +273,11 @@ const LandingPage = () => {
                         <span>Data analysis & reporting streamlining</span>
                       </li>
                     </ul>
+                    {analysisResult && (
+                      <pre className="mt-4 text-gray-300 whitespace-pre-wrap">
+                        {analysisResult}
+                      </pre>
+                    )}
                   </div>
 
                   <div className="flex space-x-4">
