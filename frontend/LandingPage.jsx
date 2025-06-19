@@ -82,11 +82,32 @@ const LandingPage = () => {
     }
   }, [isAnalyzing, currentStep]);
 
-  const handleAnalyze = () => {
+  const handleAnalyze = async () => {
     if (!websiteUrl || !email || !companyName) return;
     setIsAnalyzing(true);
     setCurrentStep(0);
     setAnalysisComplete(false);
+
+    const endpoint =
+      process.env.NODE_ENV === "production"
+        ? "/run-agent"
+        : "http://localhost:3000/run-agent";
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agent: "insights-agent",
+          input: { companyName, websiteUrl, email },
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Agent response:", data);
+    } catch (error) {
+      console.error("Error running agent:", error);
+    }
   };
 
   const resetAnalysis = () => {
