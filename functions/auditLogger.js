@@ -65,4 +65,4 @@ function logAgentAction({ sessionId, agent, input, result }) {
   });
 }
 
-module.exports = { logAgentAction };
+module.exports = { logAgentAction, readAuditLogs };

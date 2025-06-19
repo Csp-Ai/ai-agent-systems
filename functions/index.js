@@ -8,7 +8,7 @@ const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
-const { logAgentAction } = require('./auditLogger');
+const { logAgentAction, readAuditLogs } = require('./auditLogger');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -494,6 +494,17 @@ app.get('/viewer', (req, res) => {
     <script type="text/babel">ReactDOM.render(<PublicViewer url={window.reportUrl} />, document.getElementById('root'));</script>
   </body>
   </html>`);
+});
+
+// Return recent audit logs
+app.get('/audit', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit || '50', 10);
+    const logs = readAuditLogs().slice(-limit).reverse();
+    res.json(logs);
+  } catch {
+    res.status(500).json({ error: 'Failed to read audit logs' });
+  }
 });
 
 // Endpoint to fetch current session status
