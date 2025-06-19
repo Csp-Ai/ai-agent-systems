@@ -79,6 +79,7 @@ The response will contain the agent output or an error object.
 ```
 
 All executions are appended to `logs/logs.json` with the timestamp, request payload, output, and any error.
+Agent actions are also recorded in `logs/audit.json` with the timestamp, session ID, agent name, and short summaries of the input and result. This file rotates daily, producing archives like `audit-2025-06-20.json`.
 
 ## Testing Tips
 
