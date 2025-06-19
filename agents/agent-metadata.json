@@ -1,0 +1,37 @@
+{
+  "insights-agent": {
+    "name": "Content Insights Agent",
+    "description": "Analyzes content engagement metrics to highlight optimization opportunities.",
+    "inputs": {
+      "companyName": "string",
+      "websiteUrl": "url",
+      "email": "email"
+    },
+    "outputs": {
+      "summary": "string",
+      "confidenceScore": "number"
+    },
+    "category": "CX / Marketing",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19"
+  },
+
+  "website-scanner-agent": {
+    "name": "Website Scanner Agent",
+    "description": "Scrapes homepage content and meta tags to extract structure and keywords.",
+    "inputs": {
+      "websiteUrl": "url"
+    },
+    "outputs": {
+      "keywords": "array",
+      "structureMap": "object"
+    },
+    "category": "Data Extraction",
+    "enabled": false,
+    "version": "0.1.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19"
+  }
+}
