@@ -4,6 +4,7 @@ const mentor = require('./mentor-agent');
 const { evaluate } = require('../scripts/evaluate-lifecycle');
 
 const BANNED_PATTERNS = ['child_process', 'fs.unlink', 'rimraf', 'rm -rf', 'execSync', 'eval('];
+const LIFECYCLE_STAGES = ['incubation', 'beta', 'production'];
 
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const BENCH_FILE = path.join(LOG_DIR, 'agent-benchmarks.json');
@@ -65,6 +66,33 @@ function readJson(file, fallback) {
   }
 }
 
+function demote(stage) {
+  const idx = LIFECYCLE_STAGES.indexOf(stage);
+  return idx > 0 ? LIFECYCLE_STAGES[idx - 1] : stage;
+}
+
+async function createAlignmentIssue(agent) {
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPOSITORY;
+  if (!token || !repo) return;
+  try {
+    await fetch(`https://api.github.com/repos/${repo}/issues`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: `Alignment violation: ${agent}`,
+        body: `Agent ${agent} flagged as misaligned by guardian-agent`,
+        labels: ['alignment-violation']
+      })
+    });
+  } catch {
+    // ignore failure
+  }
+}
+
 module.exports = {
   run: async () => {
     try {
@@ -101,6 +129,22 @@ module.exports = {
         ...devPlans.flatMap(p => p.plans || [])
       ];
 
+      const demotions = [];
+      for (const [id, meta] of Object.entries(metadata)) {
+        if (meta.misaligned) {
+          const newStage = demote(meta.lifecycle);
+          if (newStage !== meta.lifecycle) {
+            demotions.push({ agent: id, from: meta.lifecycle, to: newStage });
+            meta.lifecycle = newStage;
+          }
+          await createAlignmentIssue(id);
+        }
+      }
+
+      if (demotions.length) {
+        fs.writeFileSync(METADATA_FILE, JSON.stringify(metadata, null, 2));
+      }
+
       const lifecycleChanges = evaluate();
 
       for (const [id, meta] of Object.entries(metadata)) {
@@ -116,8 +160,8 @@ module.exports = {
         }
       }
 
-      if (lifecycleChanges.length) {
-        const msg = `Lifecycle updates: ${JSON.stringify(lifecycleChanges)}`;
+      if (lifecycleChanges.length || demotions.length) {
+        const msg = `Lifecycle updates: ${JSON.stringify(lifecycleChanges)}, demotions: ${JSON.stringify(demotions)}`;
         await commentOnPR(msg);
       }
 
@@ -126,7 +170,8 @@ module.exports = {
         growth,
         recommendations,
         mentorSummary: mentorOutput.summary || '',
-        lifecycleChanges
+        lifecycleChanges,
+        demotions
       };
     } catch (err) {
       return { error: `Board agent failed: ${err.message}` };

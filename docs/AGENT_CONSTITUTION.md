@@ -2,7 +2,7 @@
 
 Ai Agent Systems
 
-Last updated: 2025-06-20
+Last updated: 2025-06-21
 
 🔍 Purpose
 
@@ -66,7 +66,7 @@ Gaps:
 |-------|------|
 | mentor-agent.js | Audits logs, proposes plans, logs to `development-plans.json` |
 | board-agent.js | Lifecycle governance, aggregates mentor reports, flags violations |
-| guardian-agent.js | Enforces inter-agent harmony, resolves agent conflicts, ensures alignment with growth goals and ethical standards |
+| guardian-agent.js | Enforces harmony, analyzes logs for tone and alignment, tags misaligned agents |
 | data-analyst-agent.js | Summarizes stats, trends, outliers |
 | report-generator-agent.js | Generates Markdown reports |
 | client-agent.js | User interface access |
@@ -81,13 +81,15 @@ All agents must:
 ✅ GitHub Workflows
 - Enforce `npm test`, changelog entry, agent metadata update
 - mentor-agent and board-agent validate adherence to this constitution
-- guardian-agent proposes moral reasoning or psychological alignment changes for agents acting against the Constitution
+- guardian-agent scores psychological alignment and updates `agent-metadata.json`
+- Daily workflow runs guardian-agent and board-agent for automated governance
 
 🔎 Continuous Evaluation
 - Promote agents with >0.95 success over 30 days
 - Demote agents with <0.8 or inactivity
 - Raise GitHub issues for violations (via `board-agent.js`)
 - Run health-checks to validate code/metadata consistency
+- Misaligned agents are demoted one stage and trigger `alignment-violation` issues
 
 🛄 Third-Party Plugin Pathway
 
