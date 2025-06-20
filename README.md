@@ -86,30 +86,37 @@ The compiled assets are output to `public/dashboard` and automatically served vi
 
 ## 🔥 Firebase Deployment
 
-Configure your Firebase project by editing `.firebaserc` with your project ID and initializing functions:
+The `.firebaserc` already points to the production project `ai-agent-systems` and
+`firebase.json` only defines the `functions` block so deployments target Cloud
+Functions exclusively.
+
+Initialize Firebase if needed and deploy the functions:
 
 ```bash
 firebase init functions
-```
-
-To deploy only the Cloud Functions:
-
-```bash
 firebase deploy --only functions
 ```
 
-Once deployed the endpoints are available at `https://us-central1-<PROJECT-ID>.cloudfunctions.net/`:
+Once deployed the public endpoints are available under
+`https://us-central1-ai-agent-systems.cloudfunctions.net/`:
 
 ```
-- translate → https://us-central1-<PROJECT-ID>.cloudfunctions.net/translate
-- report → https://us-central1-<PROJECT-ID>.cloudfunctions.net/report
-- executeAgent → https://us-central1-<PROJECT-ID>.cloudfunctions.net/executeAgent
+- translate → https://us-central1-ai-agent-systems.cloudfunctions.net/translate
+- report → https://us-central1-ai-agent-systems.cloudfunctions.net/report
+- executeAgent → https://us-central1-ai-agent-systems.cloudfunctions.net/executeAgent
 ```
 
-For local development run the Functions emulator:
+For local development you can start the emulator:
 
 ```bash
 firebase emulators:start --only functions
 # Example agent run
-curl http://localhost:5001/<PROJECT-ID>/us-central1/executeAgent
+curl http://localhost:5001/ai-agent-systems/us-central1/executeAgent
+```
+
+If your environment blocks `firebase-public` domains and the emulator fails to
+start, run the server directly instead:
+
+```bash
+node functions/index.js
 ```

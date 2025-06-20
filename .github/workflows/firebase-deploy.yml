@@ -14,5 +14,11 @@ jobs:
           node-version: 18
       - run: npm ci
       - run: npm test
+      - run: npm run lint --if-present
+      - run: npm run --prefix functions test
+      - run: npm run --prefix functions lint
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - run: npm install -g firebase-tools
-      - run: firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT }} --token ${{ secrets.FIREBASE_TOKEN }}
+      - run: firebase deploy --only functions --project ai-agent-systems
