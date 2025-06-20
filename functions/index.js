@@ -17,6 +17,7 @@ const {
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
 const { reportSOP } = require('./sopReporter');
+const { db, writeDocument, appendToCollection, isOrgMember } = require('./db');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -89,6 +90,16 @@ function validateToken(token) {
   }
   loginTokens.delete(token);
   return data.email;
+}
+
+async function checkOrgAccess(req, res, next) {
+  const orgId = req.params.orgId || req.body.orgId || 'default';
+  const email = req.headers['x-user-email'];
+  if (!(await isOrgMember(orgId, email))) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  req.orgId = orgId;
+  next();
 }
 
 const LOG_DIR = path.join(__dirname, '..', 'logs');
@@ -165,7 +176,7 @@ function writeSessionStatus(data) {
   fs.writeFileSync(SESSION_STATUS_FILE, JSON.stringify(data, null, 2));
 }
 
-function updateSession(sessionId, step, agent, status) {
+async function updateSession(orgId, sessionId, step, agent, status) {
   const sessions = readSessionStatus();
   if (!sessions[sessionId]) sessions[sessionId] = [];
   const idx = sessions[sessionId].findIndex(s => s.step === step && s.agent === agent);
@@ -175,9 +186,14 @@ function updateSession(sessionId, step, agent, status) {
     sessions[sessionId].push({ step, agent, status });
   }
   writeSessionStatus(sessions);
+  await writeDocument(`orgs/${orgId}/sessions`, sessionId, {
+    sessionId,
+    status: sessions[sessionId],
+    updatedAt: new Date().toISOString()
+  });
 }
 
-function saveSessionLog(sessionId, data) {
+async function saveSessionLog(orgId, sessionId, data) {
   ensureSessionFiles();
   const file = path.join(SESSION_LOG_DIR, `${sessionId}.json`);
   let logs = [];
@@ -191,6 +207,7 @@ function saveSessionLog(sessionId, data) {
   }
   logs.push(data);
   fs.writeFileSync(file, JSON.stringify(logs, null, 2));
+  await appendToCollection(`orgs/${orgId}/sessions/${sessionId}/logs`, data);
 }
 
 function getSessionLogs(sessionId) {
@@ -248,7 +265,7 @@ app.use((req, res, next) => {
 // Object to hold loaded agents keyed by file name (without extension)
 const registeredAgents = loadAgents();
 
-async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step) {
+async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step, orgId = 'default') {
   if (results[agentName]) return results[agentName];
 
   if (stack.includes(agentName)) {
@@ -267,7 +284,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
 
   const depResults = {};
   for (const dep of metadata.dependsOn || []) {
-    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step);
+    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step, orgId);
   }
 
   const expectedInputs = metadata.inputs || {};
@@ -285,8 +302,8 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
   let result;
   try {
     if (sessionId !== undefined && step !== undefined) {
-      updateSession(sessionId, step, agentName, 'active');
-      saveSessionLog(sessionId, {
+      await updateSession(orgId, sessionId, step, agentName, 'active');
+      await saveSessionLog(orgId, sessionId, {
         timestamp: new Date().toISOString(),
         clientName: input.clientName,
         step,
@@ -299,8 +316,8 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
     result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
 
     if (sessionId !== undefined && step !== undefined) {
-      updateSession(sessionId, step, agentName, 'completed');
-      saveSessionLog(sessionId, {
+      await updateSession(orgId, sessionId, step, agentName, 'completed');
+      await saveSessionLog(orgId, sessionId, {
         timestamp: new Date().toISOString(),
         clientName: input.clientName,
         step,
@@ -330,8 +347,8 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
     return result;
   } catch (err) {
     if (sessionId !== undefined && step !== undefined) {
-      updateSession(sessionId, step, agentName, 'failed');
-      saveSessionLog(sessionId, {
+      await updateSession(orgId, sessionId, step, agentName, 'failed');
+      await saveSessionLog(orgId, sessionId, {
         timestamp: new Date().toISOString(),
         clientName: input.clientName,
         step,
@@ -404,6 +421,26 @@ app.get('/logs/sessions/:id', (req, res) => {
   res.download(file);
 });
 
+app.get('/orgs/:orgId/agents', checkOrgAccess, async (req, res) => {
+  try {
+    const snap = await db.collection(`orgs/${req.orgId}/agents`).get();
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch agents' });
+  }
+});
+
+app.get('/orgs/:orgId/sessions', checkOrgAccess, async (req, res) => {
+  try {
+    const snap = await db.collection(`orgs/${req.orgId}/sessions`).orderBy('updatedAt', 'desc').get();
+    const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: 'Failed to fetch sessions' });
+  }
+});
+
 const STAGING_DIR = path.join(__dirname, '..', 'agents', 'staging');
 
 app.post('/submit-agent', upload.single('code'), async (req, res) => {
@@ -468,7 +505,7 @@ app.post('/submit-agent', upload.single('code'), async (req, res) => {
 
 // Endpoint to execute a specific agent
 async function handleExecuteAgent(req, res) {
-  const { agent: agentName, input = {}, sessionId, step, locale } = req.body || {};
+  const { agent: agentName, input = {}, sessionId, step, locale, orgId = 'default' } = req.body || {};
 
   if (!agentName) {
     appendLog({
@@ -483,7 +520,7 @@ async function handleExecuteAgent(req, res) {
 
   try {
     const results = {};
-    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step);
+    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step, orgId);
     if (locale) {
       finalResult = await translateOutput(finalResult, locale);
       results[agentName] = finalResult;

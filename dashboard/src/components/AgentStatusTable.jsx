@@ -9,16 +9,17 @@ const statusColors = {
   retired: 'bg-gray-200 text-gray-800',
 };
 
-export default function AgentStatusTable() {
+export default function AgentStatusTable({ orgId }) {
   const [agents, setAgents] = useState([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'agent-metadata'), snap => {
+    if (!orgId) return () => {};
+    const unsub = onSnapshot(collection(db, 'orgs', orgId, 'agents'), snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setAgents(data);
     });
     return unsub;
-  }, []);
+  }, [orgId]);
 
   return (
     <div className="p-4 overflow-auto">
