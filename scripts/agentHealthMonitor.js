@@ -89,7 +89,7 @@ async function main() {
       if (!agent || typeof agent.run !== 'function') {
         throw new Error('Agent module not found');
       }
-      const result = await Promise.resolve(agent.run(mockInput));
+      await Promise.resolve(agent.run(mockInput));
       success = true;
     } catch (err) {
       error = err.message;

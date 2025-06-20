@@ -1,12 +1,34 @@
 const fs = require('fs');
 const path = require('path');
 const mentor = require('./mentor-agent');
+const { evaluate } = require('../scripts/evaluate-lifecycle');
+
+const BANNED_PATTERNS = ['child_process', 'fs.unlink', 'rimraf', 'rm -rf', 'execSync', 'eval('];
 
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const BENCH_FILE = path.join(LOG_DIR, 'agent-benchmarks.json');
 const AUDIT_FILE = path.join(LOG_DIR, 'audit.json');
 const DEV_FILE = path.join(LOG_DIR, 'development-plans.json');
 const METADATA_FILE = path.join(__dirname, 'agent-metadata.json');
+
+async function commentOnPR(message) {
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_REPOSITORY;
+  const pr = process.env.PR_NUMBER;
+  if (!token || !repo || !pr) return;
+  try {
+    await fetch(`https://api.github.com/repos/${repo}/issues/${pr}/comments`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ body: message })
+    });
+  } catch {
+    // ignore failure posting comment
+  }
+}
 
 function constitutionCheck(id, meta) {
   const issues = [];
@@ -21,8 +43,7 @@ function constitutionCheck(id, meta) {
   if (fs.existsSync(filePath)) {
     try {
       const code = fs.readFileSync(filePath, 'utf8');
-      const banned = ['child_process', 'fs.unlink', 'rimraf', 'rm -rf'];
-      banned.forEach(p => {
+      BANNED_PATTERNS.forEach(p => {
         if (code.includes(p)) issues.push(`banned pattern ${p}`);
       });
     } catch (err) {
@@ -80,22 +101,32 @@ module.exports = {
         ...devPlans.flatMap(p => p.plans || [])
       ];
 
+      const lifecycleChanges = evaluate();
+
       for (const [id, meta] of Object.entries(metadata)) {
         const issues = constitutionCheck(id, meta);
         if (issues.length) {
+          const msg = `Constitution violations for ${id}: ${issues.join('; ')}`;
           recommendations.push({
             agent: id,
-            suggestion: `Constitution violations: ${issues.join('; ')}`,
+            suggestion: msg,
             guideline: 'docs/AGENT_CONSTITUTION.md'
           });
+          await commentOnPR(msg);
         }
+      }
+
+      if (lifecycleChanges.length) {
+        const msg = `Lifecycle updates: ${JSON.stringify(lifecycleChanges)}`;
+        await commentOnPR(msg);
       }
 
       return {
         agents,
         growth,
         recommendations,
-        mentorSummary: mentorOutput.summary || ''
+        mentorSummary: mentorOutput.summary || '',
+        lifecycleChanges
       };
     } catch (err) {
       return { error: `Board agent failed: ${err.message}` };
