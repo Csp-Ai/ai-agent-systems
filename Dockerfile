@@ -19,4 +19,4 @@ COPY . .
 RUN npm run build --prefix frontend
 
 EXPOSE 8080
-CMD ["npm", "start"]
+CMD ["node", "index.js"]
