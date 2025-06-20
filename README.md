@@ -83,3 +83,33 @@ npm run build
 ```
 
 The compiled assets are output to `public/dashboard` and automatically served via Firebase Hosting.
+
+## 🔥 Firebase Deployment
+
+Configure your Firebase project by editing `.firebaserc` with your project ID and initializing functions:
+
+```bash
+firebase init functions
+```
+
+To deploy only the Cloud Functions:
+
+```bash
+firebase deploy --only functions
+```
+
+Once deployed the endpoints are available at `https://us-central1-<PROJECT-ID>.cloudfunctions.net/`:
+
+```
+- translate → https://us-central1-<PROJECT-ID>.cloudfunctions.net/translate
+- report → https://us-central1-<PROJECT-ID>.cloudfunctions.net/report
+- executeAgent → https://us-central1-<PROJECT-ID>.cloudfunctions.net/executeAgent
+```
+
+For local development run the Functions emulator:
+
+```bash
+firebase emulators:start --only functions
+# Example agent run
+curl http://localhost:5001/<PROJECT-ID>/us-central1/executeAgent
+```
