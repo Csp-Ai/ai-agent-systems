@@ -107,6 +107,31 @@ async function verifyUser(req) {
   }
 }
 
+async function isOrgMember(orgId, userId) {
+  if (!orgId || !userId) return false;
+  try {
+    const doc = await db
+      .collection('orgs')
+      .doc(orgId)
+      .collection('members')
+      .doc(userId)
+      .get();
+    return doc.exists;
+  } catch {
+    return false;
+  }
+}
+
+function getOrgId(req) {
+  return (
+    req.params.orgId ||
+    req.body?.orgId ||
+    req.query.orgId ||
+    req.headers['x-org-id'] ||
+    ''
+  );
+}
+
 async function getUserPlan(uid) {
   try {
     const doc = await db.collection('users').doc(uid).collection('subscription').doc('current').get();
@@ -243,17 +268,6 @@ function saveSessionLog(sessionId, data) {
   fs.writeFileSync(file, JSON.stringify(logs, null, 2));
 }
 
-function getSessionLogs(sessionId) {
-  ensureSessionFiles();
-  const file = path.join(SESSION_LOG_DIR, `${sessionId}.json`);
-  if (!fs.existsSync(file)) return [];
-  try {
-    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
 
 function getReportsForEmail(email) {
   ensureSessionFiles();
@@ -522,6 +536,8 @@ async function handleExecuteAgent(req, res) {
 
   const uid = await verifyUser(req);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  const orgId = getOrgId(req);
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
   const plan = await getUserPlan(uid);
   const usage = await getUsageCount(uid);
   if (plan !== 'pro' && usage >= 3) {
@@ -619,7 +635,52 @@ async function handleSendReport(req, res) {
   }
 }
 
+// Generate PDF report for a session
+async function handleGenerateReport(req, res) {
+  const { sessionId } = req.params;
+  const orgId = getOrgId(req);
+  const uid = await verifyUser(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+
+  try {
+    const doc = await db
+      .collection('orgs')
+      .doc(orgId)
+      .collection('sessions')
+      .doc(sessionId)
+      .get();
+    if (!doc.exists) return res.status(404).json({ error: 'not_found' });
+    const data = doc.data() || {};
+    const generator = require('./report-generator-agent');
+    const { result, error } = await generator.run({ results: data.logs || [], clientName: data.clientName });
+    if (error) return res.status(500).json({ error });
+
+    const pdfBuffer = await new Promise((resolve, reject) => {
+      const docPdf = new PDFDocument();
+      const buffers = [];
+      docPdf.on('data', b => buffers.push(b));
+      docPdf.on('end', () => resolve(Buffer.concat(buffers)));
+      docPdf.on('error', reject);
+      docPdf.text(result || 'AI Agent Report');
+      docPdf.end();
+    });
+
+    if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR, { recursive: true });
+    fs.writeFileSync(path.join(REPORTS_DIR, `${sessionId}.pdf`), pdfBuffer);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.send(pdfBuffer);
+    await recordUsage(uid, sessionId, { pdfGenerated: 1 });
+    runLifecycleCheck();
+  } catch (err) {
+    console.error('Failed to generate report:', err);
+    res.status(500).json({ error: 'generation_failed' });
+  }
+}
+
 app.post('/send-report', handleSendReport);
+app.get('/generate-report/:sessionId', handleGenerateReport);
 
 app.get('/billing/info', async (req, res) => {
   const uid = await verifyUser(req);
@@ -797,25 +858,63 @@ app.get('/audit', (req, res) => {
 });
 
 // Endpoint to fetch current session status
-app.get('/status/:sessionId', (req, res) => {
-  const { sessionId } = req.params;
-  const sessions = readSessionStatus();
-  const data = sessions[sessionId] || [];
-  res.json(data);
+app.get('/status/:sessionId', async (req, res) => {
+  const uid = await verifyUser(req);
+  const orgId = getOrgId(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+
+  try {
+    const doc = await db
+      .collection('orgs')
+      .doc(orgId)
+      .collection('sessions')
+      .doc(req.params.sessionId)
+      .get();
+    const data = doc.exists ? doc.data().status || [] : [];
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch status' });
+  }
 });
 
 // Endpoint to resume a previous session (status and logs)
-app.get('/resume/:sessionId', (req, res) => {
-  const { sessionId } = req.params;
-  const sessions = readSessionStatus();
-  const status = sessions[sessionId] || [];
-  const logs = getSessionLogs(sessionId);
-  res.json({ status, logs });
+app.get('/resume/:sessionId', async (req, res) => {
+  const uid = await verifyUser(req);
+  const orgId = getOrgId(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+
+  try {
+    const doc = await db
+      .collection('orgs')
+      .doc(orgId)
+      .collection('sessions')
+      .doc(req.params.sessionId)
+      .get();
+    const data = doc.exists ? doc.data() : {};
+    res.json({ status: data.status || [], logs: data.logs || [] });
+  } catch {
+    res.status(500).json({ error: 'Failed to resume' });
+  }
 });
 
 // Plugin system - list and register agents
-app.get('/registered-agents', listRegisteredAgents);
-app.post('/register-agent', registerAgent);
+app.get('/registered-agents', async (req, res) => {
+  const uid = await verifyUser(req);
+  const orgId = getOrgId(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+  return listRegisteredAgents(orgId, req, res);
+});
+
+app.post('/register-agent', async (req, res) => {
+  const uid = await verifyUser(req);
+  const orgId = getOrgId(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+  return registerAgent(orgId, req, res);
+});
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {
