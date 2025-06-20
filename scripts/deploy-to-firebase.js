@@ -22,6 +22,15 @@ if (process.cwd() !== rootDir) {
 }
 
 try {
+  logInfo('Validating Firebase security rules...');
+  execSync('node scripts/validate-security-rules.js', { stdio: 'inherit' });
+  logSuccess('Security rules validation complete.');
+} catch (err) {
+  logFailure(`Rule validation failed: ${err.message}`);
+  // Continue deploying even if validation warns
+}
+
+try {
   logInfo('Building and copying dashboard...');
   execSync('node scripts/deploy-dashboard.js', { stdio: 'inherit' });
   logSuccess('Dashboard build step complete.');
