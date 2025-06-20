@@ -5,12 +5,15 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
 
-# Install and build frontend assets
+# Install frontend dependencies first for caching
 COPY frontend/package*.json frontend/
-RUN npm install --prefix frontend && npm run build --prefix frontend
+RUN npm install --prefix frontend
 
-# Copy application source
+# Copy application source including frontend code
 COPY . .
+
+# Build frontend after all sources are present
+RUN npm run build --prefix frontend
 
 EXPOSE 8080
 CMD ["npm", "start"]
