@@ -14,7 +14,8 @@
     "deploy": "node scripts/deploy-to-firebase.js",
     "validate:rules": "node scripts/validate-security-rules.js",
     "setup:live": "node scripts/setup-and-deploy-live.js",
-    "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js"
+    "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js",
+    "postdeploy:summary": "node scripts/postDeploySummary.js"
   },
   "keywords": [
     "AI",
