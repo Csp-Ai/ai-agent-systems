@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-PROJECT_ID="my-first-project"
+PROJECT_ID="ai-agent-systems"
 SERVICE_NAME="ai-agent-systems"
 REGION="us-central1"
 IMAGE="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
