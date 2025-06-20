@@ -11,6 +11,7 @@ const { PDFDocument: PDFLibDocument, rgb, StandardFonts } = require('pdf-lib');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
+const { registerAgent, listRegisteredAgents } = require('./agentRegistry');
 const {
   logAgentAction,
   readAuditLogs,
@@ -798,7 +799,7 @@ app.get('/generate-report/:sessionId', async (req, res) => {
   try {
     const logs = await fetchSessionLogsFromFirestore(sessionId);
     if (!logs.length) return res.status(404).json({ error: 'No logs found' });
-    const company = logs[0]?.clientName || 'Company';
+    const company = logs[0]?.clientName || 'company';
     const pdfBuffer = await createPdfReport(company, sessionId, logs);
     const bucket = admin.storage().bucket();
     const file = bucket.file(`reports/${sessionId}.pdf`);
@@ -810,6 +811,11 @@ app.get('/generate-report/:sessionId', async (req, res) => {
     res.status(500).json({ error: 'Failed to generate report' });
   }
 });
+
+// Plugin system - list and register agents
+app.get('/registered-agents', listRegisteredAgents);
+app.post('/register-agent', registerAgent);
+
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {

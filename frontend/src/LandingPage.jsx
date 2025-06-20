@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from './firebase';
 import {
   Globe, Zap, Brain, FileText, CheckCircle, ArrowRight, Users, TrendingUp, Clock, Shield, Star, ChevronDown, Play, Pause, RotateCcw
 } from 'lucide-react';
@@ -19,14 +21,35 @@ const LandingPage = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
   const [logMessages, setLogMessages] = useState([]);
-  const agentList = ['insights-agent', 'trends-agent', 'anomaly-agent', 'forecast-agent'];
+  const [registeredAgents, setRegisteredAgents] = useState([]);
 
-  const analysisSteps = [
-    { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows" },
-    { icon: Brain, title: "Market Research", description: "Analyzing your industry, competitors, and market opportunities" },
-    { icon: TrendingUp, title: "GTM Strategy", description: "Identifying AI integration opportunities and growth potential" },
-    { icon: FileText, title: "Report Generation", description: "Creating your personalized AI transformation roadmap" }
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const res = await fetch('/registered-agents');
+        const data = await res.json();
+        if (Array.isArray(data)) setRegisteredAgents(data);
+      } catch {
+        setRegisteredAgents([]);
+      }
+    };
+    fetchAgents();
+  }, []);
+
+  const defaultSteps = [
+    { icon: Globe, title: 'Website Analysis', description: 'Our AI scans your website architecture, content, and user flows' },
+    { icon: Brain, title: 'Market Research', description: 'Analyzing your industry, competitors, and market opportunities' },
+    { icon: TrendingUp, title: 'GTM Strategy', description: 'Identifying AI integration opportunities and growth potential' },
+    { icon: FileText, title: 'Report Generation', description: 'Creating your personalized AI transformation roadmap' }
   ];
+
+  const analysisSteps = registeredAgents.length
+    ? registeredAgents.map(a => ({ icon: Globe, title: a.displayName, description: a.description }))
+    : defaultSteps;
+
+  const agentList = registeredAgents.length
+    ? registeredAgents.map(a => a.agentId)
+    : ['insights-agent', 'trends-agent', 'anomaly-agent', 'forecast-agent'];
 
   useEffect(() => {
     const saved = localStorage.getItem('sessionId');
@@ -35,6 +58,19 @@ const LandingPage = () => {
       fetchStatus(saved);
     }
   }, []);
+
+  // Poll status while analysis is running
+  useEffect(() => {
+    if (!isAnalyzing || analysisComplete || !sessionId) return;
+
+    // immediately fetch once when starting
+    fetchStatus(sessionId);
+    const interval = setInterval(() => {
+      fetchStatus(sessionId);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isAnalyzing, analysisComplete, sessionId]);
 
   useEffect(() => {
     if (sessionId) {
@@ -80,19 +116,26 @@ const LandingPage = () => {
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
-  // Simulate agent collaboration log messages when analyzing
+  // Listen to Firestore logs in real time
+  const subscribeToLogs = () => {
+    const q = query(collection(db, 'logs'), orderBy('timestamp'));
+    return onSnapshot(q, snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          const msg = data.message || data.outputSnippet || data.output || '';
+          setLogMessages(prev => [...prev, msg]);
+        }
+      });
+    });
+  };
+
   useEffect(() => {
     if (!isAnalyzing) return;
-    const msgs = [
-      '[insights-agent] Sending data to [trends-agent]',
-      '[forecast-agent] requesting anomaly-agent support...'
-    ];
-    let i = 0;
-    const interval = setInterval(() => {
-      setLogMessages((logs) => [...logs, msgs[i % msgs.length]]);
-      i++;
-    }, 3000);
-    return () => clearInterval(interval);
+    const unsub = subscribeToLogs();
+    return () => {
+      if (unsub) unsub();
+    };
   }, [isAnalyzing]);
 
   useEffect(() => {
@@ -182,6 +225,25 @@ const LandingPage = () => {
                       </div>
                     </div>
                   )}
+
+                  <div className="bg-black/60 text-green-400 font-mono rounded-lg max-h-64 overflow-y-auto mt-4 p-3">
+                    {logMessages
+                      .slice()
+                      .reverse()
+                      .map((log, idx) => {
+                        const lower = log.toLowerCase();
+                        const colorClass = lower.includes('error') || lower.includes('anomaly')
+                          ? 'text-red-400'
+                          : lower.includes('resolved')
+                            ? 'text-emerald-400'
+                            : 'text-green-400';
+                        return (
+                          <div key={idx} className={colorClass}>
+                            {log}
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
 
