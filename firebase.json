@@ -6,6 +6,7 @@
     "public": "public",
     "cleanUrls": true,
     "rewrites": [
+      { "source": "/dashboard/**", "destination": "/dashboard/index.html" },
       { "source": "**", "function": "app" }
     ]
   },

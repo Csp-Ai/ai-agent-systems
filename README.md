@@ -71,3 +71,15 @@ npm start
 The backend includes optional translation utilities powered by **LibreTranslate**. Pass a `locale` when calling `/run-agent` to automatically translate an agent's output. The API also exposes `/translate`, `/detect-language`, and `/locales` helpers for ad-hoc requests.
 
 Developers can submit new agents through `/submit-agent` with metadata and a zip file. Submissions are staged for manual review before integration.
+
+## 🔎 Governance Dashboard
+
+The `/dashboard` directory contains a React application that connects to Firestore for real-time monitoring. To build the dashboard:
+
+```bash
+cd dashboard
+npm install
+npm run build
+```
+
+The compiled assets are output to `public/dashboard` and automatically served via Firebase Hosting.
