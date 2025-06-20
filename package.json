@@ -7,6 +7,7 @@
     "start": "node functions/index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
     "monitor": "node scripts/agentHealthMonitor.js",
+    "guardian": "node scripts/runGuardian.js",
     "lint": "eslint .",
     "resolve-package-conflicts": "node scripts/packageConflictResolver.js"
   },

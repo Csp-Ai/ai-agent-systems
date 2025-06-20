@@ -4,6 +4,7 @@ const path = require('path');
 const LOG_FILE = path.join(__dirname, '..', 'logs', 'logs.json');
 const META_FILE = path.join(__dirname, 'agent-metadata.json');
 const SCORE_FILE = path.join(__dirname, '..', 'logs', 'alignment-scores.json');
+const PROPOSALS_FILE = path.join(__dirname, '..', 'logs', 'guardian-proposals.json');
 const THRESHOLD = 0.6;
 
 function readJson(file, fallback) {
@@ -19,6 +20,23 @@ function writeJson(file, data) {
   const dir = path.dirname(file);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function extractText(entry) {
+  const parts = [];
+  if (typeof entry.input === 'string') parts.push(entry.input);
+  if (entry.input && typeof entry.input === 'object') {
+    for (const val of Object.values(entry.input)) {
+      if (typeof val === 'string') parts.push(val);
+    }
+  }
+  if (typeof entry.output === 'string') parts.push(entry.output);
+  if (entry.output && typeof entry.output === 'object') {
+    for (const val of Object.values(entry.output)) {
+      if (typeof val === 'string') parts.push(val);
+    }
+  }
+  return parts.join(' ');
 }
 
 function analyzeTone(text = '') {
@@ -39,7 +57,7 @@ function computeScores(logs) {
   logs.forEach(entry => {
     const agent = entry.agent;
     if (!agent) return;
-    const text = entry.error || JSON.stringify(entry.output || '');
+    const text = extractText(entry) || '';
     const s = analyzeTone(text);
     totals[agent] = (totals[agent] || 0) + s;
     counts[agent] = (counts[agent] || 0) + 1;
@@ -53,28 +71,18 @@ function computeScores(logs) {
 
 module.exports = {
   run: async () => {
-    const logs = readJson(LOG_FILE, []);
-    const scores = computeScores(logs);
-    const metadata = readJson(META_FILE, {});
-    let updated = false;
-    for (const [agent, score] of Object.entries(scores)) {
-      if (!metadata[agent]) continue;
-      metadata[agent].alignmentScore = score;
-      const flag = score < THRESHOLD;
-      if (flag && !metadata[agent].misaligned) {
-        metadata[agent].misaligned = true;
-        updated = true;
-      } else if (!flag && metadata[agent].misaligned) {
-        metadata[agent].misaligned = false;
-        updated = true;
-      }
-    }
-    if (updated) writeJson(META_FILE, metadata);
-    writeJson(SCORE_FILE, { timestamp: new Date().toISOString(), scores });
-    return { scores, updated };
-  }
-};
+    try {
+      const logs = readJson(LOG_FILE, []);
+      const scores = computeScores(logs);
+      const metadata = readJson(META_FILE, {});
+      const proposals = [];
+      const misaligned = [];
+      let updated = false;
 
-if (require.main === module) {
-  module.exports.run();
-}
+      for (const [agent, score] of Object.entries(scores)) {
+        if (!metadata[agent]) continue;
+
+        metadata[agent].alignmentScore = score;
+
+        const flag = score < TH
+

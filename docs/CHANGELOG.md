@@ -5,6 +5,8 @@
 - Documented "incubation" lifecycle stage.
 - Updated feedback loops and CI/CD governance notes.
 - Bumped constitution date to reflect changes.
+- Implemented tone monitoring in guardian-agent.
+- Added CI workflow to run guardian-agent on PRs modifying agents.
 
 ## 2025-06-21
 - Implemented `guardian-agent.js` alignment scoring and metadata flagging.
@@ -12,3 +14,4 @@
 - Constitution check warns on misaligned production agents.
 - Added daily governance workflow running guardian and board agents.
 - Updated constitution with new alignment governance.
+

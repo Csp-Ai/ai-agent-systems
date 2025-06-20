@@ -15,16 +15,16 @@
     "dependsOn": [
       "website-scanner-agent"
     ],
-      "enabled": true,
-      "version": "1.0.0",
-      "createdBy": "Csp-Ai",
-      "lastUpdated": "2025-06-19",
-      "critical": true,
-      "locales": ["en", "es", "fr"],
-      "lifecycle": "incubation",
-      "status": "planned",
-      "locale": "en-US",
-      "misaligned": false
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": true,
+    "locales": ["en", "es", "fr"],
+    "lifecycle": "incubation",
+    "status": "planned",
+    "locale": "en-US",
+    "misaligned": false
   },
   "report-generator-agent": {
     "name": "Report Generator",
@@ -50,7 +50,7 @@
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
-      "misaligned": false
+    "misaligned": false
   },
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
@@ -73,7 +73,7 @@
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US",
-      "misaligned": false
+    "misaligned": false
   },
   "data-analyst-agent": {
     "name": "Data Analyst Agent",
@@ -97,7 +97,7 @@
     "locales": ["en", "es", "fr"],
     "lifecycle": "incubation",
     "locale": "en-US",
-      "misaligned": false
+    "misaligned": false
   },
   "mentor-agent": {
     "name": "Mentor Agent",
@@ -117,7 +117,7 @@
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US",
-      "misaligned": false
+    "misaligned": false
   },
   "board-agent": {
     "name": "Strategy Board Agent",
@@ -138,6 +138,27 @@
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US",
-      "misaligned": false
+    "misaligned": false
+  },
+  "guardian-agent": {
+    "name": "Guardian Agent",
+    "description": "Monitors communication tone for psychological alignment and flags deviations.",
+    "inputs": {},
+    "outputs": {
+      "summary": "string",
+      "misaligned": "array",
+      "proposals": "array"
+    },
+    "category": "Governance",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": true,
+    "locales": ["en", "es", "fr"],
+    "lifecycle": "production",
+    "locale": "en-US",
+    "misaligned": false
   }
 }
+
