@@ -25,7 +25,9 @@ async function commentOnPR(message) {
       },
       body: JSON.stringify({ body: message })
     });
-  } catch {}
+  } catch {
+    // ignore failure posting comment
+  }
 }
 
 function constitutionCheck(id, meta) {

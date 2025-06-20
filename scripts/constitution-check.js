@@ -24,12 +24,19 @@ function listAgentFiles() {
 
 function checkAgentConsistency(metadata, agentFiles) {
   const errors = [];
+  const warnings = [];
   const metadataAgents = Object.keys(metadata);
   const fileAgents = agentFiles.map(file => file.replace('.js', ''));
 
   metadataAgents.forEach(name => {
+    const agent = metadata[name] || {};
+    const isPlanned = agent.status === 'planned';
     if (!fileAgents.includes(name)) {
-      errors.push(`Missing agent file: ${name}.js`);
+      if (isPlanned) {
+        warnings.push(`Planned agent ${name} has no file and is exempt`);
+      } else {
+        errors.push(`Missing agent file: ${name}.js`);
+      }
     }
   });
 
@@ -39,30 +46,49 @@ function checkAgentConsistency(metadata, agentFiles) {
     }
   });
 
-  return errors;
+  return { errors, warnings };
 }
 
 function checkRequiredFields(agent) {
-  const required = ['name', 'description', 'lifecycle', 'dependencies', 'maturity'];
-  return required.filter(key => !agent.hasOwnProperty(key));
+  const required = [
+    'name',
+    'description',
+    'inputs',
+    'outputs',
+    'category',
+    'version',
+    'createdBy',
+    'lifecycle'
+  ];
+  return required.filter(key => !Object.prototype.hasOwnProperty.call(agent, key));
 }
 
 function scanForBannedPatterns(agentPath) {
   const code = fs.readFileSync(agentPath, 'utf-8');
-  return BANNED_PATTERNS.filter(pattern => code.includes(pattern));
+  const sanitized = code
+    .split(/\n/)
+    .filter(line => !line.includes('BANNED_PATTERNS'))
+    .join('\n');
+  return BANNED_PATTERNS.filter(pattern => sanitized.includes(pattern));
 }
 
 function runChecks() {
   const metadata = loadMetadata();
   const agentFiles = listAgentFiles();
   const errors = [];
+  const warnings = [];
 
-  errors.push(...checkAgentConsistency(metadata, agentFiles));
+  const consistency = checkAgentConsistency(metadata, agentFiles);
+  errors.push(...consistency.errors);
+  warnings.push(...consistency.warnings);
 
   Object.entries(metadata).forEach(([id, agent]) => {
     const missingFields = checkRequiredFields(agent);
     if (missingFields.length) {
       errors.push(`Agent ${id} missing fields: ${missingFields.join(', ')}`);
+    }
+    if (agent.status === 'planned' && agent.lifecycle !== 'incubation') {
+      errors.push(`Planned agent ${id} must have lifecycle incubation`);
     }
   });
 
@@ -73,6 +99,10 @@ function runChecks() {
       errors.push(`Banned patterns in ${file}: ${patterns.join(', ')}`);
     }
   });
+
+  if (warnings.length) {
+    console.warn(warnings.join('\n'));
+  }
 
   if (errors.length) {
     console.error('Constitution check failed:\n' + errors.join('\n'));

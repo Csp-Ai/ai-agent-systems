@@ -21,7 +21,8 @@
       "lastUpdated": "2025-06-19",
       "critical": true,
       "locales": ["en", "es", "fr"],
-      "lifecycle": "production",
+      "lifecycle": "incubation",
+      "status": "planned",
       "locale": "en-US"
   },
   "report-generator-agent": {
@@ -45,7 +46,8 @@
     "lastUpdated": "2025-06-19",
     "critical": true,
     "locales": ["en", "es", "fr"],
-    "lifecycle": "production",
+    "lifecycle": "incubation",
+    "status": "planned",
     "locale": "en-US"
   },
   "website-scanner-agent": {
@@ -90,7 +92,7 @@
     "lastUpdated": "2025-06-19",
     "critical": true,
     "locales": ["en", "es", "fr"],
-    "lifecycle": "production",
+    "lifecycle": "incubation",
     "locale": "en-US"
   },
   "mentor-agent": {

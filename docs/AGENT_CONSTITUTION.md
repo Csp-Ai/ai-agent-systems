@@ -74,6 +74,7 @@ Gaps:
 All agents must:
 - Register in `agent-metadata.json`
 - Include inputs, outputs, category, version, createdBy
+- Optionally set `"status": "planned"` for agents not yet implemented. Planned agents are exempt from the file existence check but must still provide full metadata and remain in the `incubation` lifecycle.
 
 ⟳ CI/CD & Governance Engine
 

@@ -17,7 +17,9 @@ function ensureAuditFile() {
         const archive = path.join(LOG_DIR, `audit-${fileDate}.json`);
         fs.renameSync(AUDIT_FILE, archive);
       }
-    } catch {}
+    } catch {
+      // ignore rotation errors
+    }
   }
   if (!fs.existsSync(AUDIT_FILE)) {
     fs.writeFileSync(AUDIT_FILE, '[]', 'utf8');
