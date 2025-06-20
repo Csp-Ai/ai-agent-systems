@@ -1,0 +1,15 @@
+{
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": {
+    "public": "public",
+    "cleanUrls": true,
+    "rewrites": [
+      { "source": "**", "function": "app" }
+    ]
+  },
+  "logging": {
+    "functions": true
+  }
+}

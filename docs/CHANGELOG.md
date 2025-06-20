@@ -1,5 +1,10 @@
 # Changelog
 
+## 2025-06-21
+- Migrated agent logs to Firestore collections
+- Added Firebase Hosting configuration and deployment workflow
+- Cloud Functions now expose agents as callable endpoints
+
 ## 2025-06-20
 - Added `guardian-agent.js` to governance role definitions and responsibilities.
 - Documented "incubation" lifecycle stage.

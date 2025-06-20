@@ -1,33 +1,19 @@
 const fs = require('fs');
 const path = require('path');
+const { readCollection, writeDocument } = require('../functions/db');
 
 const META_PATH = path.join(__dirname, '../agents/agent-metadata.json');
-const BENCH_PATH = path.join(__dirname, '../logs/agent-benchmarks.json');
-const LOG_PATH = path.join(__dirname, '../logs/lifecycle-log.json');
-
 const STAGES = ['alpha', 'beta', 'production'];
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
 
 function promote(stage) {
   const idx = STAGES.indexOf(stage);
   return idx >= 0 && idx < STAGES.length - 1 ? STAGES[idx + 1] : stage;
 }
 
-function evaluate() {
-  const metadata = readJson(META_PATH, {});
-  const benchmarks = readJson(BENCH_PATH, []);
-  const log = readJson(LOG_PATH, []);
+async function evaluate() {
+  const metadata = JSON.parse(fs.readFileSync(META_PATH, 'utf8'));
+  const benchmarks = await readCollection('agentBenchmarks');
+  const log = await readCollection('lifecycle');
   const updates = [];
 
   for (const [id, meta] of Object.entries(metadata)) {
@@ -53,21 +39,21 @@ function evaluate() {
   }
 
   if (updates.length) {
-    writeJson(META_PATH, metadata);
-    log.push({ timestamp: new Date().toISOString(), updates });
-    writeJson(LOG_PATH, log);
+    fs.writeFileSync(META_PATH, JSON.stringify(metadata, null, 2));
+    await writeDocument('lifecycle', 'log', { entries: [...log, { updates }] });
   }
 
   return updates;
 }
 
 if (require.main === module) {
-  const changes = evaluate();
-  if (changes.length) {
-    console.log('Lifecycle updates:', changes);
-  } else {
-    console.log('No lifecycle updates');
-  }
+  evaluate().then(changes => {
+    if (changes.length) {
+      console.log('Lifecycle updates:', changes);
+    } else {
+      console.log('No lifecycle updates');
+    }
+  });
 }
 
 module.exports = { evaluate };

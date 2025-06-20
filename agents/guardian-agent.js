@@ -1,24 +1,11 @@
-const fs = require('fs');
-const path = require('path');
+const { readCollection, writeDocument } = require('../functions/db');
 
-const LOG_FILE = path.join(__dirname, '..', 'logs', 'logs.json');
-const PROPOSALS_FILE = path.join(__dirname, '..', 'logs', 'guardian-proposals.json');
-
-function readLogs() {
-  if (!fs.existsSync(LOG_FILE)) return [];
-  try {
-    const data = fs.readFileSync(LOG_FILE, 'utf8');
-    const logs = JSON.parse(data);
-    return Array.isArray(logs) ? logs : [];
-  } catch {
-    return [];
-  }
+async function readLogs() {
+  return await readCollection('logs');
 }
 
-function writeProposals(data) {
-  const dir = path.dirname(PROPOSALS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(PROPOSALS_FILE, JSON.stringify(data, null, 2));
+async function writeProposals(data) {
+  await writeDocument('guardian', 'proposals', { data });
 }
 
 function extractText(entry) {
@@ -51,7 +38,7 @@ function toneScore(text) {
 module.exports = {
   run: async () => {
     try {
-      const logs = readLogs();
+      const logs = await readLogs();
       if (!logs.length) {
         return { summary: 'No logs available', misaligned: [] };
       }
@@ -78,7 +65,7 @@ module.exports = {
         }
       }
 
-      if (proposals.length) writeProposals(proposals);
+      if (proposals.length) await writeProposals(proposals);
 
       return { summary: `Checked ${logs.length} log entries`, misaligned, proposals };
     } catch (err) {
