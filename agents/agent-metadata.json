@@ -15,15 +15,16 @@
     "dependsOn": [
       "website-scanner-agent"
     ],
-      "enabled": true,
-      "version": "1.0.0",
-      "createdBy": "Csp-Ai",
-      "lastUpdated": "2025-06-19",
-      "critical": true,
-      "locales": ["en", "es", "fr"],
-      "lifecycle": "incubation",
-      "status": "planned",
-      "locale": "en-US"
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": true,
+    "locales": ["en", "es", "fr"],
+    "lifecycle": "incubation",
+    "status": "planned",
+    "locale": "en-US",
+    "misaligned": false
   },
   "report-generator-agent": {
     "name": "Report Generator",
@@ -48,7 +49,8 @@
     "locales": ["en", "es", "fr"],
     "lifecycle": "incubation",
     "status": "planned",
-    "locale": "en-US"
+    "locale": "en-US",
+    "misaligned": false
   },
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
@@ -70,7 +72,8 @@
     "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
-    "locale": "en-US"
+    "locale": "en-US",
+    "misaligned": false
   },
   "data-analyst-agent": {
     "name": "Data Analyst Agent",
@@ -93,7 +96,8 @@
     "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "incubation",
-    "locale": "en-US"
+    "locale": "en-US",
+    "misaligned": false
   },
   "mentor-agent": {
     "name": "Mentor Agent",
@@ -112,7 +116,8 @@
     "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
-    "locale": "en-US"
+    "locale": "en-US",
+    "misaligned": false
   },
   "board-agent": {
     "name": "Strategy Board Agent",
@@ -132,7 +137,8 @@
     "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
-    "locale": "en-US"
+    "locale": "en-US",
+    "misaligned": false
   },
   "guardian-agent": {
     "name": "Guardian Agent",
@@ -151,6 +157,8 @@
     "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
-    "locale": "en-US"
+    "locale": "en-US",
+    "misaligned": false
   }
 }
+

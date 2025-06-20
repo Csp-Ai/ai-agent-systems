@@ -90,6 +90,9 @@ function runChecks() {
     if (agent.status === 'planned' && agent.lifecycle !== 'incubation') {
       errors.push(`Planned agent ${id} must have lifecycle incubation`);
     }
+    if (agent.misaligned && ['production', 'mature'].includes(agent.lifecycle)) {
+      warnings.push(`Misaligned agent ${id} in ${agent.lifecycle} lifecycle`);
+    }
   });
 
   agentFiles.forEach(file => {
