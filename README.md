@@ -2,6 +2,8 @@
 
 Custom AI agent systems to streamline operations, automate tasks, and enhance decision-making. Built by a strategy-led, builder-driven team.
 
+[**Agent Constitution**](docs/AGENT_CONSTITUTION.md) – official guidelines covering ethics, lifecycle policies and governance for all agents.
+
 ## 🧭 Project Overview
 
 This repository supports rapid design, development, and deployment of AI agent systems that improve operational efficiency and scale intelligently across industries.

@@ -8,6 +8,32 @@ const AUDIT_FILE = path.join(LOG_DIR, 'audit.json');
 const DEV_FILE = path.join(LOG_DIR, 'development-plans.json');
 const METADATA_FILE = path.join(__dirname, 'agent-metadata.json');
 
+function constitutionCheck(id, meta) {
+  const issues = [];
+  const allowed = ['alpha', 'beta', 'production', 'deprecated'];
+  if (!allowed.includes(meta.lifecycle)) {
+    issues.push('invalid lifecycle');
+  }
+  ['name', 'description', 'inputs', 'outputs', 'version'].forEach(f => {
+    if (!meta[f]) issues.push(`missing ${f}`);
+  });
+  const filePath = path.join(__dirname, `${id}.js`);
+  if (fs.existsSync(filePath)) {
+    try {
+      const code = fs.readFileSync(filePath, 'utf8');
+      const banned = ['child_process', 'fs.unlink', 'rimraf', 'rm -rf'];
+      banned.forEach(p => {
+        if (code.includes(p)) issues.push(`banned pattern ${p}`);
+      });
+    } catch (err) {
+      issues.push('error scanning file');
+    }
+  } else {
+    issues.push('missing agent file');
+  }
+  return issues;
+}
+
 function readJson(file, fallback) {
   try {
     if (!fs.existsSync(file)) return fallback;
@@ -53,6 +79,17 @@ module.exports = {
         ...(mentorOutput.plans || []),
         ...devPlans.flatMap(p => p.plans || [])
       ];
+
+      for (const [id, meta] of Object.entries(metadata)) {
+        const issues = constitutionCheck(id, meta);
+        if (issues.length) {
+          recommendations.push({
+            agent: id,
+            suggestion: `Constitution violations: ${issues.join('; ')}`,
+            guideline: 'docs/AGENT_CONSTITUTION.md'
+          });
+        }
+      }
 
       return {
         agents,
