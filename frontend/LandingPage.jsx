@@ -3,6 +3,8 @@ import {
   Globe, Zap, Brain, FileText, CheckCircle, ArrowRight, Users, TrendingUp, Clock, Shield, Star, ChevronDown, Play, Pause, RotateCcw
 } from 'lucide-react';
 import AgentTracker from './AgentTracker';
+import AgentConsoleView from './AgentConsoleView';
+import AgentInteractionVisualizer from './AgentInteractionVisualizer';
 
 const LandingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -142,11 +144,21 @@ const LandingPage = () => {
                 </>
               )}
               {isAnalyzing && (
-                <AgentTracker
-                  steps={analysisSteps.map(s => s.title)}
-                  currentStep={currentStep}
-                  status={stepStatus}
-                />
+                <div className="relative">
+                  <AgentTracker
+                    steps={analysisSteps.map(s => s.title)}
+                    currentStep={currentStep}
+                    status={stepStatus}
+                  />
+                  {currentStep === 0 && (
+                    <div className="relative mt-4">
+                      <div className="absolute inset-0">
+                        <AgentInteractionVisualizer />
+                      </div>
+                      <AgentConsoleView />
+                    </div>
+                  )}
+                </div>
               )}
               {analysisComplete && emailSent && (
                 <div className="mt-4 flex flex-col items-center">

@@ -3,6 +3,7 @@ import {
   Globe, Zap, Brain, FileText, CheckCircle, ArrowRight, Users, TrendingUp, Clock, Shield, Star, ChevronDown, Play, Pause, RotateCcw
 } from 'lucide-react';
 import AgentTracker from './AgentTracker';
+import AgentConsoleView from './AgentConsoleView';
 import AgentInteractionVisualizer from './AgentInteractionVisualizer';
 
 const LandingPage = () => {
@@ -126,11 +127,10 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="relative z-10">
-        {/* Form & Tracker */}
         <section className="px-6 py-20 text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl font-bold text-white mb-6">Start Your AI Analysis</h1>
-            <div className="bg-white/10 p-6 rounded-xl">
+            <div className="bg-white/10 p-6 rounded-xl relative overflow-hidden">
               {!isAnalyzing && (
                 <>
                   <input
@@ -153,12 +153,13 @@ const LandingPage = () => {
                   />
                   <button
                     onClick={handleAnalyze}
-                    className="w-full bg-blue-600 text-white p-2 rounded"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
                   >
                     Start Analysis
                   </button>
                 </>
               )}
+
               {isAnalyzing && (
                 <div className="relative">
                   <AgentTracker
@@ -166,11 +167,24 @@ const LandingPage = () => {
                     currentStep={currentStep}
                     status={stepStatus}
                   />
-                  <div className="absolute inset-0 flex items-center pointer-events-none">
-                    <AgentInteractionVisualizer agents={agentList} logMessages={logMessages} />
-                  </div>
+                  
+                  {/* Animated Overlay + Console View */}
+                  {currentStep === 0 && (
+                    <div className="relative mt-4 w-full">
+                      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+                        <AgentInteractionVisualizer
+                          agents={agentList}
+                          logMessages={logMessages}
+                        />
+                      </div>
+                      <div className="relative z-10">
+                        <AgentConsoleView />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+
               {analysisComplete && emailSent && (
                 <div className="mt-4 flex flex-col items-center">
                   <p className="text-green-400">✅ Email Sent!</p>
@@ -195,3 +209,31 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0px rgba(0, 255, 255, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.9));
+  }
+}
+
+@keyframes arc-flow {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.drop-shadow-glow {
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}
+
+.animate-arc {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: arc-flow 0.8s ease forwards;
+}
+

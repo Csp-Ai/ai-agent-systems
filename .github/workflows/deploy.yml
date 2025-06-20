@@ -1,0 +1,44 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  PROJECT_ID: ai-agent-systems
+  REGION: us-central1
+  SERVICE_NAME: ai-agent-systems
+  IMAGE: gcr.io/ai-agent-systems/ai-agent-systems
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test
+      - id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCLOUD_SERVICE_KEY }}
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+      - name: Build Docker image
+        run: gcloud builds submit --tag $IMAGE .
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --quiet
+      - name: Post-deploy summary
+        run: |
+          npm run postdeploy:cloudrun
+          npm run postdeploy:summary

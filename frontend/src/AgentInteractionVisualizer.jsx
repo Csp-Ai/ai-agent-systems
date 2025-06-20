@@ -81,3 +81,4 @@ export default function AgentInteractionVisualizer({ agents = [], logMessages = 
     </div>
   );
 }
+
