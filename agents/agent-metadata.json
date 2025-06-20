@@ -133,5 +133,24 @@
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US"
+  },
+  "guardian-agent": {
+    "name": "Guardian Agent",
+    "description": "Monitors communication tone for psychological alignment and flags deviations.",
+    "inputs": {},
+    "outputs": {
+      "summary": "string",
+      "misaligned": "array",
+      "proposals": "array"
+    },
+    "category": "Governance",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": true,
+    "locales": ["en", "es", "fr"],
+    "lifecycle": "production",
+    "locale": "en-US"
   }
 }
