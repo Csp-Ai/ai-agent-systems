@@ -1,29 +1,35 @@
 {
   "name": "ai-agent-systems",
   "version": "1.0.0",
-  "description": "Custom AI agent systems to streamline operations, automate tasks, and enhance decision-making. Built by a strategy-led, builder-driven team.",
+  "description": "Modular AI agent systems for streamlining operations, automating tasks, and enhancing decision-making. Built by a strategy-led, builder-driven team.",
   "main": "index.js",
+  "type": "commonjs",
+  "license": "Apache-2.0",
+  "author": "Csp-Ai",
+
   "scripts": {
     "start": "node functions/index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
+    "lint": "eslint .",
     "monitor": "node scripts/agentHealthMonitor.js",
     "guardian": "node scripts/runGuardian.js",
-    "lint": "eslint .",
     "resolve-package-conflicts": "node scripts/packageConflictResolver.js",
-    "deploy:dashboard": "node scripts/deploy-dashboard.js",
     "setup:firebase": "node scripts/firebase-setup.js",
-    "deploy": "node scripts/deploy-to-firebase.js"
+    "deploy:dashboard": "node scripts/deploy-dashboard.js",
+    "deploy": "node scripts/deploy-to-firebase.js",
+    "setup:live": "node scripts/setup-and-deploy-live.js"
   },
+
   "keywords": [
     "AI",
     "agents",
     "automation",
     "modular",
-    "orchestration"
+    "orchestration",
+    "deployment",
+    "decision-support"
   ],
-  "author": "Csp-Ai",
-  "license": "Apache-2.0",
-  "type": "commonjs",
+
   "dependencies": {
     "cheerio": "^1.1.0",
     "cors": "^2.8.5",
@@ -37,6 +43,7 @@
     "pdfkit": "^0.13.0",
     "reactflow": "^11.11.4"
   },
+
   "devDependencies": {
     "eslint": "^8.50.0"
   }

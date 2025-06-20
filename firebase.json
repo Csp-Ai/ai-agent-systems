@@ -12,5 +12,8 @@
   },
   "logging": {
     "functions": true
+  },
+  "database": {
+    "rules": "database.rules.json"
   }
 }

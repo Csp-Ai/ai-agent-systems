@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "ai-agent-systems"
-  }
+  },
+  "targets": {
+    "ai-agent-systems": {
+      "hosting": {
+        "default": [
+          "ai-agent-systems"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
