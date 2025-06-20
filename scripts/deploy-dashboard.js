@@ -2,9 +2,22 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+function logSuccess(msg) {
+  console.log(`\x1b[32m✅ ${msg}\x1b[0m`);
+}
+
+function logFailure(msg) {
+  console.error(`\x1b[31m❌ ${msg}\x1b[0m`);
+}
+
+function logInfo(msg) {
+  console.log(`\x1b[34mℹ️  ${msg}\x1b[0m`);
+}
+
 // Ensure script runs from repository root
 const rootDir = path.resolve(__dirname, '..');
 if (process.cwd() !== rootDir) {
+  logInfo(`Switching to repository root: ${rootDir}`);
   process.chdir(rootDir);
 }
 
@@ -19,19 +32,14 @@ if (fs.existsSync(distDir)) {
 }
 
 if (!sourceDir) {
-  console.error('\x1b[31m❌ No dashboard output found in dashboard/dist or dashboard/build\x1b[0m');
+  logFailure('No dashboard output found in dashboard/dist or dashboard/build');
   process.exit(1);
 }
 
 const destDir = path.join(rootDir, 'public', 'dashboard');
 
-function logSuccess(msg) {
-  console.log(`\x1b[32m✅ ${msg}\x1b[0m`);
-}
-
-function logFailure(msg) {
-  console.error(`\x1b[31m❌ ${msg}\x1b[0m`);
-}
+logInfo(`Build source directory: ${sourceDir}`);
+logInfo(`Destination directory: ${destDir}`);
 
 try {
   if (fs.existsSync(destDir)) {
@@ -39,10 +47,11 @@ try {
   }
   fs.mkdirSync(destDir, { recursive: true });
 
+  logInfo('Copying dashboard build output...');
   if (process.platform === 'win32') {
     execSync(`xcopy "${sourceDir}" "${destDir}" /E /I /Y`);
   } else {
-    execSync(`cp -R ${sourceDir}/. ${destDir}`);
+    execSync(`cp -R "${sourceDir}/." "${destDir}"`);
   }
   logSuccess(`Copied ${sourceDir} to ${destDir}`);
 } catch (err) {
@@ -51,6 +60,7 @@ try {
 }
 
 try {
+  logInfo('Deploying to Firebase Hosting...');
   execSync('firebase deploy --only hosting', { stdio: 'inherit' });
   logSuccess('Firebase Hosting deployment complete');
 } catch (err) {
