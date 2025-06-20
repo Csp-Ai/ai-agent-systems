@@ -9,6 +9,7 @@ const nodemailer = require('nodemailer');
 const { PDFDocument, StandardFonts: pdfFonts } = require('pdf-lib');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
+const { registerAgentFromForm, getRegisteredAgents } = require('../utils/agentTools');
 const agentMetadata = require('../agents/agent-metadata.json');
 const { registerAgent, listRegisteredAgents } = require('./agentRegistry');
 const {
@@ -309,7 +310,7 @@ app.use((req, res, next) => {
 });
 
 // Object to hold loaded agents keyed by file name (without extension)
-const registeredAgents = loadAgents();
+let registeredAgents = getRegisteredAgents();
 
 async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step) {
   if (results[agentName]) return results[agentName];
@@ -921,6 +922,16 @@ app.post('/register-agent', async (req, res) => {
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
   if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
   return registerAgent(orgId, req, res);
+});
+
+app.post('/add-agent', async (req, res) => {
+  try {
+    registerAgentFromForm(req.body || {});
+    registeredAgents = getRegisteredAgents();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // LibreTranslate - available languages

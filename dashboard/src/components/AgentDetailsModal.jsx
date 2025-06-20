@@ -3,6 +3,7 @@ import { useState } from 'react';
 export default function AgentDetailsModal({ agent, onClose, orgId }) {
   const [input, setInput] = useState('');
   const [response, setResponse] = useState(null);
+  const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const send = async () => {
@@ -16,6 +17,7 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
       });
       const data = await res.json();
       setResponse(data.agentResponse || data.error);
+      setLog(data.log || []);
     } catch (err) {
       setResponse(err.message);
     }
@@ -23,7 +25,7 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50 transition-opacity">
       <div className="bg-white dark:bg-gray-800 rounded-lg w-96 max-w-full p-6">
         <h3 className="text-lg font-semibold mb-2">{agent.name || agent.id}</h3>
         <p className="text-sm mb-2">{agent.description}</p>
@@ -59,6 +61,11 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
         {response && (
           <div className="mt-2 text-sm bg-gray-100 dark:bg-gray-700 p-2 rounded">
             {response}
+          </div>
+        )}
+        {log.length > 0 && (
+          <div className="mt-2 bg-gray-800 text-gray-100 text-xs p-2 rounded max-h-40 overflow-auto whitespace-pre-wrap">
+            {log.join('\n')}
           </div>
         )}
       </div>
