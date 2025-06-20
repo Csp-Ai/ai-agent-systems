@@ -1,14 +1,15 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore';
 
-const OrgContext = createContext({ orgId: null, orgs: [], setOrgId: () => {} });
+const OrgContext = createContext({ orgId: null, orgs: [], agents: [], setOrgId: () => {} });
 
 export function OrgProvider({ children }) {
   const [orgId, setOrgId] = useState(null);
   const [orgs, setOrgs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [agents, setAgents] = useState([]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async user => {
@@ -29,8 +30,23 @@ export function OrgProvider({ children }) {
     return unsub;
   }, []);
 
+  useEffect(() => {
+    if (!orgId) { setAgents([]); return; }
+    const agentsCol = collection(db, 'orgs', orgId, 'agents');
+    const metaCol = collection(db, 'orgs', orgId, 'agent-metadata');
+    const unsubAgents = onSnapshot(agentsCol, snap => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (list.length) setAgents(list);
+    });
+    const unsubMeta = onSnapshot(metaCol, snap => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setAgents(prev => (prev.length ? prev : list));
+    });
+    return () => { unsubAgents(); unsubMeta(); };
+  }, [orgId]);
+
   return (
-    <OrgContext.Provider value={{ orgId, setOrgId, orgs, loading }}>
+    <OrgContext.Provider value={{ orgId, setOrgId, orgs, agents, loading }}>
       {children}
     </OrgContext.Provider>
   );
