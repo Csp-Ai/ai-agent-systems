@@ -6,8 +6,11 @@ const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-app.get('/', (req, res) => {
-  res.send('AI Agent Systems API running');
+const staticDir = path.join(__dirname, 'frontend', 'dist');
+app.use(express.static(staticDir));
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 const SUMMARY_FILE = path.join(__dirname, 'logs', 'summary.json');
@@ -36,6 +39,10 @@ app.post('/api/refresh', (req, res) => {
     }
     res.json(data);
   });
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(staticDir, 'index.html'));
 });
 
 app.listen(PORT, () => {
