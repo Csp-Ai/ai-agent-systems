@@ -24,35 +24,37 @@ function exec(command, opts = {}) {
 }
 
 function runStep(description, command, opts = {}) {
-  try {
-    log(color.cyan, `\n➡ ${description}...`);
-    const result = exec(command, opts);
-    if (opts.capture) process.stdout.write(result);
-    log(color.green, `✅ ${description} complete.`);
-    return result;
-  } catch (err) {
-    log(color.red, `❌ ${description} failed.`);
-    if (err.stdout) process.stdout.write(err.stdout.toString());
-    if (err.stderr) process.stderr.write(err.stderr.toString());
+  const retries = opts.retries || 0;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      log(color.cyan, `\n➡ ${description}...`);
+      const result = exec(command, opts);
+      if (opts.capture) process.stdout.write(result);
+      log(color.green, `✅ ${description} complete.`);
+      return result;
+    } catch (err) {
+      log(color.red, `❌ ${description} failed.`);
+      if (err.stdout) process.stdout.write(err.stdout.toString());
+      if (err.stderr) process.stderr.write(err.stderr.toString());
 
-    if (opts.retryAuth) {
-      try {
-        log(color.yellow, '➡ Attempting Firebase login...');
-        exec('firebase login', { stdio: 'inherit' });
-        log(color.green, '✅ Firebase login successful.');
-        log(color.cyan, `Retrying ${description.toLowerCase()}...`);
-        const retryResult = exec(command, opts);
-        if (opts.capture) process.stdout.write(retryResult);
-        log(color.green, `✅ ${description} complete.`);
-        return retryResult;
-      } catch (loginErr) {
-        log(color.red, '❌ Firebase login failed.');
-        if (loginErr.stdout) process.stdout.write(loginErr.stdout.toString());
-        if (loginErr.stderr) process.stderr.write(loginErr.stderr.toString());
+      if (opts.retryAuth) {
+        try {
+          log(color.yellow, '➡ Attempting Firebase login...');
+          exec('firebase login', { stdio: 'inherit' });
+          log(color.green, '✅ Firebase login successful.');
+        } catch (loginErr) {
+          log(color.red, '❌ Firebase login failed.');
+          if (loginErr.stdout) process.stdout.write(loginErr.stdout.toString());
+          if (loginErr.stderr) process.stderr.write(loginErr.stderr.toString());
+        }
+      }
+
+      if (attempt < retries) {
+        log(color.yellow, `➡ Retrying ${description.toLowerCase()} (${attempt + 1}/${retries})...`);
+      } else {
+        throw err;
       }
     }
-
-    throw err;
   }
 }
 
@@ -76,9 +78,8 @@ function isLoggedIn() {
 
 async function ensureFirebaseCLI() {
   if (hasFirebaseCLI()) return;
-
   log(color.yellow, 'Firebase CLI not found. Installing...');
-  runStep('Installing Firebase CLI', 'npm install -g firebase-tools');
+  runStep('Install Firebase CLI', 'npm install -g firebase-tools', { retries: 1 });
 }
 
 function openUrl(url) {
@@ -98,7 +99,6 @@ function openUrl(url) {
   }
 }
 
-// Ensure we run from repository root
 const rootDir = path.resolve(__dirname, '..');
 process.chdir(rootDir);
 
@@ -111,17 +111,19 @@ async function main() {
     runStep('Firebase login', 'firebase login');
   }
 
-  runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true });
-  runStep('Deploy dashboard', 'npm run deploy:dashboard', { retryAuth: true });
-  const deployOutput = runStep(
-    'Firebase deploy',
-    'npm run deploy',
-    { capture: true, retryAuth: true }
-  );
-  const match = deployOutput.match(/https?:\/\/[^\s]+/);
-  if (match) {
-    openUrl(match[0]);
+  runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true, retries: 1 });
+  runStep('Deploy dashboard', 'npm run deploy:dashboard', { retryAuth: true, retries: 1 });
+  const deployOutput = runStep('Firebase deploy', 'npm run deploy', {
+    capture: true,
+    retryAuth: true,
+    retries: 1,
+  });
+  const hostingMatch = deployOutput.match(/Hosting URL[:\s]+(https?:\/\/[^\s]+)/i);
+  const url = hostingMatch ? hostingMatch[1] : (deployOutput.match(/https?:\/\/[^\s]+/) || [])[0];
+  if (url) {
+    openUrl(url);
   }
+
   log(color.green, '\n🎉 Deployment process finished!');
 }
 
