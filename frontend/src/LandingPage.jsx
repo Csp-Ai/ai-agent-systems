@@ -182,6 +182,25 @@ const LandingPage = () => {
                       </div>
                     </div>
                   )}
+
+                  <div className="bg-black/60 text-green-400 font-mono rounded-lg max-h-64 overflow-y-auto mt-4 p-3">
+                    {logMessages
+                      .slice()
+                      .reverse()
+                      .map((log, idx) => {
+                        const lower = log.toLowerCase();
+                        const colorClass = lower.includes('error') || lower.includes('anomaly')
+                          ? 'text-red-400'
+                          : lower.includes('resolved')
+                            ? 'text-emerald-400'
+                            : 'text-green-400';
+                        return (
+                          <div key={idx} className={colorClass}>
+                            {log}
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
 
