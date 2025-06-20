@@ -378,7 +378,7 @@ app.get('/logs/sessions/:id', (req, res) => {
   res.download(file);
 });
 
-const STAGING_DIR = path.join(__dirname, '..', 'staging');
+const STAGING_DIR = path.join(__dirname, '..', 'agents', 'staging');
 
 app.post('/submit-agent', upload.single('code'), async (req, res) => {
   if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
@@ -414,6 +414,13 @@ app.post('/submit-agent', upload.single('code'), async (req, res) => {
       }
     }
 
+    // run constitution check
+    try {
+      require('child_process').execSync('node scripts/constitution-check.js', { stdio: 'ignore' });
+    } catch (err) {
+      return res.status(400).json({ error: 'Constitution check failed' });
+    }
+
     if (!fs.existsSync(STAGING_DIR)) fs.mkdirSync(STAGING_DIR, { recursive: true });
     const dest = path.join(STAGING_DIR, `${metadata.name}.zip`);
     fs.writeFileSync(dest, req.file.buffer);
@@ -425,6 +432,7 @@ app.post('/submit-agent', upload.single('code'), async (req, res) => {
       status: 'pending review'
     });
 
+    await require('../agents/board-agent').run();
     res.json({ success: true });
   } catch (err) {
     console.error('Agent submission failed:', err);

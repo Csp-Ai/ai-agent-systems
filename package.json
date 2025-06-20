@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node functions/index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
-    "monitor": "node scripts/agentHealthMonitor.js"
+    "monitor": "node scripts/agentHealthMonitor.js",
+    "lint": "eslint ."
   },
   "keywords": [
     "AI",
@@ -30,5 +31,8 @@
     "nodemailer": "^6.9.1",
     "pdfkit": "^0.13.0",
     "reactflow": "^11.11.4"
+  },
+  "devDependencies": {
+    "eslint": "^8.50.0"
   }
 }
