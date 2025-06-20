@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>SOP Diff Viewer</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900">
+  <div id="root"></div>
+  <script type="text/babel" src="../SopDiffViewer.jsx"></script>
+  <script type="text/babel">
+    ReactDOM.render(
+      <SopDiffViewer agentId="demo-agent" orgId="demo-org" />,
+      document.getElementById('root')
+    );
+  </script>
+</body>
+</html>
