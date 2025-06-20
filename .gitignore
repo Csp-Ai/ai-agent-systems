@@ -136,3 +136,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Firebase service account keys
+firebase-service-account.json
+serviceAccountKey.json
+*.service-account.json
