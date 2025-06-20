@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "author": "Csp-Ai",
   "scripts": {
-    "start": "node functions/index.js",
+    "start": "node index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
     "setup:firebase": "node scripts/firebase-setup.js",
     "deploy:dashboard": "node scripts/deploy-dashboard.js",
