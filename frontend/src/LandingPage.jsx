@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from './firebase';
 import {
   Globe, Zap, Brain, FileText, CheckCircle, ArrowRight, Users, TrendingUp, Clock, Shield, Star, ChevronDown, Play, Pause, RotateCcw
 } from 'lucide-react';
@@ -80,19 +82,26 @@ const LandingPage = () => {
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
-  // Simulate agent collaboration log messages when analyzing
+  // Listen to Firestore logs in real time
+  const subscribeToLogs = () => {
+    const q = query(collection(db, 'logs'), orderBy('timestamp'));
+    return onSnapshot(q, snap => {
+      snap.docChanges().forEach(change => {
+        if (change.type === 'added') {
+          const data = change.doc.data();
+          const msg = data.message || data.outputSnippet || data.output || '';
+          setLogMessages(prev => [...prev, msg]);
+        }
+      });
+    });
+  };
+
   useEffect(() => {
     if (!isAnalyzing) return;
-    const msgs = [
-      '[insights-agent] Sending data to [trends-agent]',
-      '[forecast-agent] requesting anomaly-agent support...'
-    ];
-    let i = 0;
-    const interval = setInterval(() => {
-      setLogMessages((logs) => [...logs, msgs[i % msgs.length]]);
-      i++;
-    }, 3000);
-    return () => clearInterval(interval);
+    const unsub = subscribeToLogs();
+    return () => {
+      if (unsub) unsub();
+    };
   }, [isAnalyzing]);
 
   useEffect(() => {
