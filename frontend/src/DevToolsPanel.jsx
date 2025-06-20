@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import DevAgentLogSimulator from './DevAgentLogSimulator.jsx';
 import { Tab, Disclosure } from '@headlessui/react';
 import { Settings, X } from 'lucide-react';
 import {
@@ -103,7 +104,11 @@ export default function DevToolsPanel() {
           </div>
           <Tab.Group as="div" className="flex-1 flex flex-col">
             <Tab.List className="flex space-x-1 bg-gray-200 dark:bg-gray-700 p-1">
-              {['Firestore', 'Sim Logs', 'SOP', 'Control'].map(tab => (
+              {(
+                process.env.NODE_ENV !== 'production'
+                  ? ['Firestore', 'Sim Logs', 'SOP', 'Control', 'Log Simulator']
+                  : ['Firestore', 'Sim Logs', 'SOP', 'Control']
+              ).map(tab => (
                 <Tab
                   key={tab}
                   className={({ selected }) =>
@@ -181,6 +186,11 @@ export default function DevToolsPanel() {
                   {paused ? 'Resume' : 'Pause'}
                 </button>
               </Tab.Panel>
+              {process.env.NODE_ENV !== 'production' && (
+                <Tab.Panel className="space-y-2">
+                  <DevAgentLogSimulator />
+                </Tab.Panel>
+              )}
             </Tab.Panels>
           </Tab.Group>
         </div>

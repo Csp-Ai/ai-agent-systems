@@ -17,7 +17,8 @@
     "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js",
     "postdeploy:summary": "node scripts/postDeploySummary.js",
     "postdeploy:all": "node scripts/postDeploySummary.js",
-    "process-log": "node agents/process-guardian-agent.js"
+    "process-log": "node agents/process-guardian-agent.js",
+    "cleanup:reports": "node functions/cleanupOldReports.js"
   },
   "keywords": [
     "AI",
