@@ -2,12 +2,22 @@ import React, { useState, useEffect } from 'react';
 
 export default function AgentConsoleView() {
   const [logs, setLogs] = useState([]);
-  const [agents, setAgents] = useState([
-    { id: 'insights-agent', label: 'Insights', status: 'idle' },
-    { id: 'trends-agent', label: 'Trends', status: 'idle' },
-    { id: 'strategy-agent', label: 'Strategy', status: 'idle' },
-    { id: 'report-agent', label: 'Report', status: 'idle' },
-  ]);
+  const [agents, setAgents] = useState([]);
+
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        const res = await fetch('/registered-agents');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setAgents(data.map(a => ({ id: a.agentId, label: a.displayName, status: 'idle' })));
+        }
+      } catch {
+        setAgents([]);
+      }
+    };
+    loadAgents();
+  }, []);
 
   useEffect(() => {
     const eventSource = new EventSource('/api/agent-logs');
