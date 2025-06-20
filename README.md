@@ -67,6 +67,9 @@ cd ai-agent-systems
 # Install dependencies
 npm install
 
+# Initialize Firebase hosting
+npm run setup:firebase
+
 # Run development server
 npm start
 ```
