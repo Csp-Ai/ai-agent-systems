@@ -1,37 +1,12 @@
-const fs = require('fs');
-const path = require('path');
 const { performance } = require('perf_hooks');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
-const { readAuditLogs } = require('./auditLogger');
-
-const HEALTH_FILE = path.join(__dirname, '..', 'logs', 'health-status.json');
+const { readCollection, appendToCollection } = require('./db');
 
 const LT_URL = process.env.TRANSLATE_URL || 'https://libretranslate.de';
 
-function ensureHealthFile() {
-  const dir = path.dirname(HEALTH_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(HEALTH_FILE)) {
-    fs.writeFileSync(HEALTH_FILE, '[]', 'utf8');
-  }
-}
-
-function readHealthStatus() {
-  ensureHealthFile();
-  try {
-    return JSON.parse(fs.readFileSync(HEALTH_FILE, 'utf8'));
-  } catch {
-    return [];
-  }
-}
-
-function appendHealthStatus(entry) {
-  const data = readHealthStatus();
-  data.push(entry);
-  fs.writeFileSync(HEALTH_FILE, JSON.stringify(data, null, 2));
+async function appendHealthStatus(entry) {
+  await appendToCollection('healthStatus', entry);
 }
 
 function createMockInput(inputs = {}) {
@@ -99,7 +74,7 @@ async function checkAgent(agentName, meta, agents) {
   }
 
   const latencyMs = Math.round(performance.now() - start);
-  const auditFailure = hasRecentAuditFailure(agentName);
+  const auditFailure = await hasRecentAuditFailure(agentName);
   return {
     agent: agentName,
     success,
@@ -107,7 +82,7 @@ async function checkAgent(agentName, meta, agents) {
     attempts,
     auditFailure,
     error,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date().toISOString()
   };
 }
 
@@ -125,7 +100,7 @@ async function checkStripe() {
   if (!key) return null;
   try {
     const resp = await fetch('https://api.stripe.com/v1/charges?limit=1', {
-      headers: { Authorization: `Bearer ${key}` },
+      headers: { Authorization: `Bearer ${key}` }
     });
     return resp.ok;
   } catch {
@@ -133,9 +108,9 @@ async function checkStripe() {
   }
 }
 
-function checkAuditLogs() {
+async function checkAuditLogs() {
   try {
-    const logs = readAuditLogs();
+    const logs = await readCollection('auditLogs');
     if (!Array.isArray(logs) || !logs.length) return false;
     const last = logs[logs.length - 1];
     if (!last.timestamp) return false;
@@ -146,9 +121,9 @@ function checkAuditLogs() {
   }
 }
 
-function hasRecentAuditFailure(agentName) {
+async function hasRecentAuditFailure(agentName) {
   try {
-    const logs = readAuditLogs();
+    const logs = await readCollection('auditLogs');
     if (!Array.isArray(logs)) return false;
     const recent = logs.slice(-20).reverse();
     for (const entry of recent) {
@@ -172,15 +147,8 @@ async function runHealthChecks() {
   }
   const translation = await checkTranslation();
   const stripe = await checkStripe();
-  const auditLogRecent = checkAuditLogs();
-  const lastAudit = (() => {
-    try {
-      const logs = readAuditLogs();
-      return logs.length ? logs[logs.length - 1] : null;
-    } catch {
-      return null;
-    }
-  })();
+  const auditLogRecent = await checkAuditLogs();
+  const lastAudit = (() => null)();
   const overall =
     agentResults.every(r => r.success && !r.auditFailure) &&
     translation &&
@@ -191,9 +159,9 @@ async function runHealthChecks() {
     agents: agentResults,
     services: { translation, stripe },
     auditLogRecent,
-    lastAudit,
+    lastAudit
   };
-  appendHealthStatus({ timestamp: new Date().toISOString(), ...summary });
+  await appendHealthStatus({ ...summary });
   return summary;
 }
 

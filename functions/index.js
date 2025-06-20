@@ -728,9 +728,26 @@ app.get('/health-check', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+const functions = require('firebase-functions');
+
+module.exports.app = functions.https.onRequest(app);
+
+exports.runGuardian = functions.https.onCall(async (data) => {
+  const agent = require('../agents/guardian-agent');
+  return await agent.run(data);
 });
 
-module.exports = app;
+exports.boardAgent = functions.https.onCall(async (data) => {
+  const agent = require('../agents/board-agent');
+  return await agent.run(data);
+});
+
+exports.evaluateLifecycle = functions.https.onCall(async () => {
+  const { evaluate } = require('../scripts/evaluate-lifecycle');
+  return await evaluate();
+});
+
+exports.constitutionCheck = functions.https.onCall(async () => {
+  require('../scripts/constitution-check');
+  return { result: 'done' };
+});

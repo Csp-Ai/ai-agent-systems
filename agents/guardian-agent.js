@@ -1,26 +1,6 @@
-const fs = require('fs');
-const path = require('path');
+const { readCollection, writeDocument } = require('../functions/db');
 
-const LOG_FILE = path.join(__dirname, '..', 'logs', 'logs.json');
-const META_FILE = path.join(__dirname, 'agent-metadata.json');
-const SCORE_FILE = path.join(__dirname, '..', 'logs', 'alignment-scores.json');
-const PROPOSALS_FILE = path.join(__dirname, '..', 'logs', 'guardian-proposals.json');
 const THRESHOLD = 0.6;
-
-function readJson(file, fallback) {
-  try {
-    if (!fs.existsSync(file)) return fallback;
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return fallback;
-  }
-}
-
-function writeJson(file, data) {
-  const dir = path.dirname(file);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
 
 function extractText(entry) {
   const parts = [];
@@ -69,20 +49,51 @@ function computeScores(logs) {
   return scores;
 }
 
+async function readLogs() {
+  return await readCollection('logs');
+}
+
+async function writeProposals(data) {
+  await writeDocument('guardian', 'proposals', { data });
+}
+
 module.exports = {
   run: async () => {
     try {
-      const logs = readJson(LOG_FILE, []);
+      const logs = await readLogs();
+      if (!logs.length) {
+        return { summary: 'No logs available', misaligned: [] };
+      }
+
       const scores = computeScores(logs);
-      const metadata = readJson(META_FILE, {});
       const proposals = [];
       const misaligned = [];
-      let updated = false;
 
       for (const [agent, score] of Object.entries(scores)) {
-        if (!metadata[agent]) continue;
+        if (score < THRESHOLD) {
+          misaligned.push(agent);
+          proposals.push({ agent, suggestion: 'Tone deviates negatively from norms' });
+        } else if (score < 0.75) {
+          proposals.push({ agent, suggestion: 'Monitor communication tone' });
+        }
+      }
 
-        metadata[agent].alignmentScore = score;
+      if (proposals.length) await writeProposals(proposals);
 
-        const flag = score < TH
+      return {
+        summary: `Analyzed ${logs.length} log entries`,
+        misaligned,
+        proposals,
+        scores
+      };
+    } catch (err) {
+      return { error: `Guardian agent failed: ${err.message}` };
+    }
+  }
+};
+
+if (require.main === module) {
+  module.exports.run().then(console.log);
+}
+
 

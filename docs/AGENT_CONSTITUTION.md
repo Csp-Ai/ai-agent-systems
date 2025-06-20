@@ -45,7 +45,7 @@ Gaps:
      - Inputs
      - Outputs
      - Status (active, completed, failed)
-   - Logs go to `logs/sessionStatus.json` and `logs/logs.json`
+  - Logs are stored in Firestore collections instead of local files
 3. **Ethical Design**
    - No agents may access `child_process`, `fs.unlink`, or perform destructive actions without audit.
    - All user data must be anonymized and stored securely.
