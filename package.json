@@ -12,8 +12,8 @@
     "resolve-package-conflicts": "node scripts/packageConflictResolver.js",
     "deploy:dashboard": "node scripts/deploy-dashboard.js",
     "setup:firebase": "node scripts/firebase-setup.js",
-    "deploy": "node scripts/deploy-to-firebase.js",
-    "setup:live": "node scripts/setup-and-deploy-live.js"
+    "setup:live": "node scripts/setup-and-deploy-live.js",
+    "deploy": "node scripts/deploy-to-firebase.js"
   },
   "keywords": [
     "AI",
