@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import BillingPanel from './BillingPanel.jsx';
 
 export default function ClientPortal({ reports = [] }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -124,12 +125,7 @@ export default function ClientPortal({ reports = [] }) {
           </div>
         )}
 
-        {activeTab === 'Billing' && (
-          <div>
-            <h1 className="text-2xl font-bold mb-4">Billing</h1>
-            <p>Billing information coming soon.</p>
-          </div>
-        )}
+        {activeTab === 'Billing' && <BillingPanel />}
       </div>
     </div>
   );

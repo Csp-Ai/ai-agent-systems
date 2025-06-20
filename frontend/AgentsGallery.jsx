@@ -38,6 +38,10 @@ export default function AgentsGallery() {
         input: { text: inputValue || "Test input" }
       })
     });
+    if (res.status === 403) {
+      alert("You've reached your monthly limit.");
+      return;
+    }
     const result = await res.json();
     setOutput(result.response || result.error);
   };
@@ -63,6 +67,10 @@ export default function AgentsGallery() {
             input: { text: inputValue || "Test input" },
           }),
         });
+        if (res.status === 403) {
+          alert("You've reached your monthly limit.");
+          return;
+        }
         const result = await res.json();
         outputs.push({
           agent: agent.name,
