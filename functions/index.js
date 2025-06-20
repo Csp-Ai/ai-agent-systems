@@ -16,6 +16,7 @@ const {
   appendAuditLog,
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
+const { reportSOP } = require('./sopReporter');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -280,6 +281,8 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
     throw new Error(`Agent '${agentName}' implementation not found`);
   }
 
+  const startTime = Date.now();
+  let result;
   try {
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'active');
@@ -293,7 +296,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       });
     }
 
-    const result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
+    result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
 
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'completed');
@@ -317,6 +320,13 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
 
     results[agentName] = result;
     stack.pop();
+    await reportSOP(agentName, {
+      goal: metadata.description || '',
+      steps: [{ name: 'run', durationMs: Date.now() - startTime }],
+      errors: [],
+      suggestions: [],
+      durationMs: Date.now() - startTime
+    });
     return result;
   } catch (err) {
     if (sessionId !== undefined && step !== undefined) {
@@ -338,6 +348,13 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
     });
     logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
     stack.pop();
+    await reportSOP(agentName, {
+      goal: metadata.description || '',
+      steps: [{ name: 'run', durationMs: Date.now() - startTime }],
+      errors: [err.message],
+      suggestions: [],
+      durationMs: Date.now() - startTime
+    });
     throw err;
   }
 }
