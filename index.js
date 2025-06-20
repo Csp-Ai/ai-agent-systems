@@ -13,7 +13,7 @@ app.get('/healthz', (_req, res) => {
 });
 
 // Serve the frontend entry for any route not matched by static assets
-app.get('*', (_req, res) => {
+app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(distDir, 'index.html'));
 });
 
