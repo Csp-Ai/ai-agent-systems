@@ -5,6 +5,7 @@ import AgentStatusTable from './components/AgentStatusTable';
 import MisalignmentProposalsPanel from './components/MisalignmentProposalsPanel';
 import ExecutionLogViewer from './components/ExecutionLogViewer';
 import AgentHealthDashboard from './components/AgentHealthDashboard';
+import AgentGallery from './pages/AgentGallery';
 import './index.css';
 
 function Shell() {
@@ -48,6 +49,7 @@ function Shell() {
             <Link to="/health" className="hover:underline">Health</Link>
             <Link to="/proposals" className="hover:underline">Proposals</Link>
             <Link to="/logs" className="hover:underline">Logs</Link>
+            <Link to="/agents" className="hover:underline">Agents</Link>
           </nav>
           <button onClick={() => setDark(!dark)} className="text-sm mt-4">
             Toggle {dark ? 'Light' : 'Dark'}
@@ -59,6 +61,7 @@ function Shell() {
             <Route path="/health" element={<AgentHealthDashboard />} />
             <Route path="/proposals" element={<MisalignmentProposalsPanel />} />
             <Route path="/logs" element={<ExecutionLogViewer />} />
+            <Route path="/agents" element={<AgentGallery />} />
           </Routes>
         </main>
       </div>
