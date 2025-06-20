@@ -56,12 +56,10 @@ app.post('/api/refresh', (req, res) => {
   });
 });
 
-// Landing page served for the root and unmatched routes
+// Public landing page
+// Serve the Vite built index.html at the root while allowing
+// static assets like JS and CSS to resolve correctly
 app.get('/', (req, res) => {
-  res.sendFile(path.join(frontendDir, 'index.html'));
-});
-
-app.get('*', (req, res) => {
   res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
