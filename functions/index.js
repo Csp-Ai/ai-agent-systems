@@ -10,6 +10,7 @@ const PDFDocument = require('pdfkit');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
+const { registerAgent, listRegisteredAgents } = require('./agentRegistry');
 const {
   logAgentAction,
   readAuditLogs,
@@ -705,6 +706,10 @@ app.get('/resume/:sessionId', (req, res) => {
   const logs = getSessionLogs(sessionId);
   res.json({ status, logs });
 });
+
+// Plugin system - list and register agents
+app.get('/registered-agents', listRegisteredAgents);
+app.post('/register-agent', registerAgent);
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {

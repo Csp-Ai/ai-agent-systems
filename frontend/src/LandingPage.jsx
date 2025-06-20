@@ -21,14 +21,35 @@ const LandingPage = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
   const [logMessages, setLogMessages] = useState([]);
-  const agentList = ['insights-agent', 'trends-agent', 'anomaly-agent', 'forecast-agent'];
+  const [registeredAgents, setRegisteredAgents] = useState([]);
 
-  const analysisSteps = [
-    { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows" },
-    { icon: Brain, title: "Market Research", description: "Analyzing your industry, competitors, and market opportunities" },
-    { icon: TrendingUp, title: "GTM Strategy", description: "Identifying AI integration opportunities and growth potential" },
-    { icon: FileText, title: "Report Generation", description: "Creating your personalized AI transformation roadmap" }
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const res = await fetch('/registered-agents');
+        const data = await res.json();
+        if (Array.isArray(data)) setRegisteredAgents(data);
+      } catch {
+        setRegisteredAgents([]);
+      }
+    };
+    fetchAgents();
+  }, []);
+
+  const defaultSteps = [
+    { icon: Globe, title: 'Website Analysis', description: 'Our AI scans your website architecture, content, and user flows' },
+    { icon: Brain, title: 'Market Research', description: 'Analyzing your industry, competitors, and market opportunities' },
+    { icon: TrendingUp, title: 'GTM Strategy', description: 'Identifying AI integration opportunities and growth potential' },
+    { icon: FileText, title: 'Report Generation', description: 'Creating your personalized AI transformation roadmap' }
   ];
+
+  const analysisSteps = registeredAgents.length
+    ? registeredAgents.map(a => ({ icon: Globe, title: a.displayName, description: a.description }))
+    : defaultSteps;
+
+  const agentList = registeredAgents.length
+    ? registeredAgents.map(a => a.agentId)
+    : ['insights-agent', 'trends-agent', 'anomaly-agent', 'forecast-agent'];
 
   useEffect(() => {
     const saved = localStorage.getItem('sessionId');

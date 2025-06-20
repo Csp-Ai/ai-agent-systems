@@ -1,32 +1,25 @@
-import React, { useState } from "react";
-
-const agents = [
-  {
-    id: "insights-agent",
-    name: "Content Insights Agent",
-    description: "Analyzes content engagement and suggests improvements.",
-    tags: ["Marketing", "Analytics"]
-  },
-  {
-    id: "website-scanner-agent",
-    name: "Website Scanner",
-    description: "Scrapes and summarizes your website structure.",
-    tags: ["Scraping", "Data Extraction"]
-  },
-  {
-    id: "market-research-agent",
-    name: "Market Research Agent",
-    description: "Analyzes industry and competitor trends.",
-    tags: ["Business", "Research"]
-  }
-];
+import React, { useState, useEffect } from "react";
 
 export default function AgentsGallery() {
+  const [agents, setAgents] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [selectedAgents, setSelectedAgents] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [output, setOutput] = useState(null);
   const [workflowOutput, setWorkflowOutput] = useState([]);
+
+  useEffect(() => {
+    const loadAgents = async () => {
+      try {
+        const res = await fetch('/registered-agents');
+        const data = await res.json();
+        if (Array.isArray(data)) setAgents(data.map(a => ({ id: a.agentId, name: a.displayName, description: a.description })));
+      } catch {
+        setAgents([]);
+      }
+    };
+    loadAgents();
+  }, []);
 
   const runDemo = async () => {
     if (!selectedAgent) return;
@@ -90,17 +83,7 @@ export default function AgentsGallery() {
                 className="form-checkbox h-4 w-4 text-blue-500"
               />
             </div>
-            <p className="text-gray-300 mb-2">{agent.description}</p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {agent.tags.map(tag => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-1 bg-blue-500/30 rounded-full text-blue-100"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
+            <p className="text-gray-300 mb-4">{agent.description}</p>
             <button
               onClick={() => {
                 setSelectedAgent(agent);
