@@ -16,7 +16,8 @@
     "setup:live": "node scripts/setup-and-deploy-live.js",
     "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js",
     "postdeploy:summary": "node scripts/postDeploySummary.js",
-    "postdeploy:all": "node scripts/postDeploySummary.js"
+    "postdeploy:all": "node scripts/postDeploySummary.js",
+    "process-log": "node agents/process-guardian-agent.js"
   },
   "keywords": [
     "AI",
