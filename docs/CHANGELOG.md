@@ -1,5 +1,8 @@
 # Changelog
 
+## 2025-06-22
+- Added `vision-guard-agent.js` for monitoring roadmap drift and SOP coverage.
+
 ## 2025-06-21
 - Migrated agent logs to Firestore collections
 - Added Firebase Hosting configuration and deployment workflow

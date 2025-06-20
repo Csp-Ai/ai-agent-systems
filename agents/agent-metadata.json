@@ -234,5 +234,27 @@
     "lifecycle": "incubation",
     "locale": "en-US",
     "misaligned": false
+  },
+  "vision-guard-agent": {
+    "name": "Vision Guard Agent",
+    "description": "Monitors roadmap drift and alerts on unmapped features, unregistered agents, and missing SOPs.",
+    "inputs": {},
+    "outputs": {
+      "featureWarnings": "array",
+      "unknownAgents": "array",
+      "sopIssues": "array"
+    },
+    "category": "Governance",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": [
+      "en"
+    ],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
   }
 }
