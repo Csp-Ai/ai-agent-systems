@@ -6,7 +6,6 @@
   "type": "commonjs",
   "license": "Apache-2.0",
   "author": "Csp-Ai",
-
   "scripts": {
     "start": "node functions/index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
@@ -15,7 +14,6 @@
     "deploy": "node scripts/deploy-to-firebase.js",
     "setup:live": "node scripts/setup-and-deploy-live.js"
   },
-
   "keywords": [
     "AI",
     "agents",
@@ -25,9 +23,9 @@
     "deployment",
     "decision-support"
   ],
-
   "dependencies": {
     "cheerio": "^1.1.0",
+    "clipboardy": "^4.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -39,7 +37,6 @@
     "pdfkit": "^0.13.0",
     "reactflow": "^11.11.4"
   },
-
   "devDependencies": {
     "eslint": "^8.50.0"
   }

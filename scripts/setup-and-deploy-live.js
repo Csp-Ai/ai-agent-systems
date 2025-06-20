@@ -3,6 +3,8 @@ console.log("\ud83d\ude80 Live deploy script initialized");
 
 const { execSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const clipboardy = require('clipboardy');
 
 const color = {
   red: text => `\x1b[31m${text}\x1b[0m`,
@@ -11,6 +13,9 @@ const color = {
   cyan: text => `\x1b[36m${text}\x1b[0m`,
   magenta: text => `\x1b[35m${text}\x1b[0m`,
 };
+
+const rootDir = path.resolve(__dirname, '..');
+process.chdir(rootDir);
 
 function log(colorFn, message) {
   console.log(colorFn(message));
@@ -100,8 +105,18 @@ function openUrl(url) {
   }
 }
 
-const rootDir = path.resolve(__dirname, '..');
-process.chdir(rootDir);
+function ensureHostingDir() {
+  const configPath = path.join(rootDir, 'firebase.json');
+  const expected = 'public/dashboard';
+  const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  if (data.hosting?.public !== expected) {
+    log(color.yellow, `⚠️  Updating firebase.json hosting public directory to ${expected}`);
+    if (!data.hosting) data.hosting = {};
+    data.hosting.public = expected;
+    fs.writeFileSync(configPath, JSON.stringify(data, null, 2));
+  }
+  return data.hosting.public;
+}
 
 async function main() {
   log(color.magenta, '\n🚀 Live Setup & Deployment Pipeline');
@@ -112,8 +127,17 @@ async function main() {
     runStep('Firebase login', 'firebase login', { retries: 2 });
   }
 
+  const hostingDir = ensureHostingDir();
+
   runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true, retries: 2 });
-  runStep('Deploy dashboard', 'npm run deploy:dashboard', { retryAuth: true, retries: 2 });
+  const buildOutput = runStep('Deploy dashboard', 'npm run deploy:dashboard', {
+    capture: true,
+    retryAuth: true,
+    retries: 2,
+  });
+
+  const sizeRegex = /public\/dashboard\/[^\s]+\s+\d+\.\d+ kB.*$/gm;
+  const sizeLines = (buildOutput.match(sizeRegex) || []).map(l => l.trim());
   const deployOutput = runStep('Firebase deploy', 'npm run deploy', {
     capture: true,
     retryAuth: true,
@@ -123,9 +147,23 @@ async function main() {
   const url = hostingMatch ? hostingMatch[1] : (deployOutput.match(/https?:\/\/[^\s]+/) || [])[0];
   if (url) {
     openUrl(url);
+    try {
+      clipboardy.writeSync(url);
+      log(color.cyan, '📋 Hosting URL copied to clipboard.');
+    } catch {
+      log(color.yellow, '⚠️  Failed to copy URL to clipboard.');
+    }
   }
 
-  log(color.green, '\n🎉 Deployment process finished!');
+  const timestamp = new Date().toISOString();
+  if (sizeLines.length) {
+    log(color.cyan, '\nDeployed file sizes:\n' + sizeLines.join('\n'));
+  }
+  log(color.green, `\n✅ Deployment finished at ${timestamp}`);
+  if (url) {
+    log(color.green, `URL: ${url}`);
+  }
+  log(color.green, `Directory used: ${hostingDir}`);
 }
 
 main().catch(() => {
