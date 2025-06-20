@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import AgentDetailsModal from '../components/AgentDetailsModal';
+import AddAgentForm from '../components/AddAgentForm';
 import { useOrg } from '../OrgContext';
 
 export default function AgentGallery() {
   const [agents, setAgents] = useState([]);
   const [active, setActive] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
   const { orgId } = useOrg();
 
-  useEffect(() => {
+  const load = () => {
     fetch('/agents/agent-metadata.json')
       .then(res => res.json())
       .then(data => {
@@ -15,16 +17,28 @@ export default function AgentGallery() {
         setAgents(list);
       })
       .catch(() => setAgents([]));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   return (
     <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Agent Systems Gallery</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Agent Systems Gallery</h2>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded"
+        >
+          + Add Agent
+        </button>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {agents.map(a => (
           <div
             key={a.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transform hover:-translate-y-1 transition"
+            className="rounded border bg-slate-800 text-white shadow-md hover:scale-105 transition-transform"
           >
             <div className="p-4 flex items-start">
               <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
@@ -32,15 +46,13 @@ export default function AgentGallery() {
               </div>
               <div className="flex-1">
                 <h3 className="font-medium">{a.name || a.id}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-300">
                   {a.description}
                 </p>
               </div>
-              <span
-                className={`ml-2 w-3 h-3 rounded-full ${a.enabled ? 'bg-green-500' : 'bg-yellow-500'}`}
-              />
+              <span className="text-xs px-2 py-0.5 rounded bg-gray-700">{a.status || 'idle'}</span>
             </div>
-            <ul className="px-4 pb-2 list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
+            <ul className="px-4 pb-2 list-disc list-inside text-sm text-gray-300">
               <li>Category: {a.category}</li>
               <li>Lifecycle: {a.lifecycle}</li>
               <li>Version: {a.version}</li>
@@ -64,6 +76,12 @@ export default function AgentGallery() {
       </div>
       {active && (
         <AgentDetailsModal agent={active} orgId={orgId} onClose={() => setActive(null)} />
+      )}
+      {showAdd && (
+        <AddAgentForm
+          onClose={() => setShowAdd(false)}
+          onAdded={load}
+        />
       )}
     </div>
   );
