@@ -80,10 +80,10 @@ function rollbackTo(revision) {
     url
   };
 
-  logInfo(`Pinging ${url}/health ...`);
+  logInfo(`Pinging ${url}/healthz ...`);
   let healthy = false;
   try {
-    const res = await fetch(`${url}/health`);
+    const res = await fetch(`${url}/healthz`);
     healthy = res.ok;
   } catch (err) {
     logFailure(`Health check request failed: ${err.message}`);

@@ -38,7 +38,7 @@ The Dockerfile builds the React frontend during the container build so the `/` r
  - `/` – Serves the Vite-built landing page (Cloud Run loads this by default).
 - `/dashboard` – Governance dashboard UI.
 - `/api/summary` – Returns the latest deployment summary from `logs/summary.json`.
-- `/health-check` – Basic service health endpoint.
+ - `/healthz` – Basic service health endpoint used by Cloud Run.
 - `/reports/*` – Generated PDF reports.
 
 ## Update Flow
