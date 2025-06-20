@@ -20,7 +20,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
@@ -46,7 +50,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
@@ -70,7 +78,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false
@@ -94,7 +106,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "incubation",
     "locale": "en-US",
     "misaligned": false
@@ -114,7 +130,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false
@@ -135,7 +155,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false
@@ -155,7 +179,11 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en", "es", "fr"],
+    "locales": [
+      "en",
+      "es",
+      "fr"
+    ],
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false
@@ -179,10 +207,32 @@
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
     "critical": true,
-    "locales": ["en"],
+    "locales": [
+      "en"
+    ],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
+  },
+  "process-guardian-agent": {
+    "name": "Process Guardian Agent",
+    "description": "Logs commits with category tags for roadmap tracking.",
+    "inputs": {},
+    "outputs": {
+      "categories": "array",
+      "message": "string"
+    },
+    "category": "Governance",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": [
+      "en"
+    ],
     "lifecycle": "incubation",
     "locale": "en-US",
     "misaligned": false
   }
 }
-
