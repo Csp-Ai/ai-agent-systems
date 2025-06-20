@@ -2,7 +2,6 @@
 
 const { execSync } = require('child_process');
 const path = require('path');
-const readline = require('readline');
 
 const color = {
   red: text => `\x1b[31m${text}\x1b[0m`,
@@ -75,25 +74,10 @@ function isLoggedIn() {
   }
 }
 
-function ask(question) {
-  return new Promise(resolve => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(question, answer => {
-      rl.close();
-      resolve(answer.trim());
-    });
-  });
-}
-
 async function ensureFirebaseCLI() {
   if (hasFirebaseCLI()) return;
 
-  log(color.yellow, 'Firebase CLI not found.');
-  const ans = await ask('Install Firebase CLI globally with `npm install -g firebase-tools`? (Y/n) ');
-  if (ans && ans.toLowerCase().startsWith('n')) {
-    log(color.red, 'Firebase CLI is required. Aborting.');
-    process.exit(1);
-  }
+  log(color.yellow, 'Firebase CLI not found. Installing...');
   runStep('Installing Firebase CLI', 'npm install -g firebase-tools');
 }
 
@@ -128,10 +112,10 @@ async function main() {
   }
 
   runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true });
-  runStep('Building dashboard with Vite', 'npm --prefix dashboard run build');
+  runStep('Deploy dashboard', 'npm run deploy:dashboard', { retryAuth: true });
   const deployOutput = runStep(
-    'Deploying to Firebase Hosting',
-    'firebase deploy --only hosting',
+    'Firebase deploy',
+    'npm run deploy',
     { capture: true, retryAuth: true }
   );
   const match = deployOutput.match(/https?:\/\/[^\s]+/);
