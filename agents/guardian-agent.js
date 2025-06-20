@@ -2,23 +2,24 @@ const fs = require('fs');
 const path = require('path');
 
 const LOG_FILE = path.join(__dirname, '..', 'logs', 'logs.json');
+const META_FILE = path.join(__dirname, 'agent-metadata.json');
+const SCORE_FILE = path.join(__dirname, '..', 'logs', 'alignment-scores.json');
 const PROPOSALS_FILE = path.join(__dirname, '..', 'logs', 'guardian-proposals.json');
+const THRESHOLD = 0.6;
 
-function readLogs() {
-  if (!fs.existsSync(LOG_FILE)) return [];
+function readJson(file, fallback) {
   try {
-    const data = fs.readFileSync(LOG_FILE, 'utf8');
-    const logs = JSON.parse(data);
-    return Array.isArray(logs) ? logs : [];
+    if (!fs.existsSync(file)) return fallback;
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
   } catch {
-    return [];
+    return fallback;
   }
 }
 
-function writeProposals(data) {
-  const dir = path.dirname(PROPOSALS_FILE);
+function writeJson(file, data) {
+  const dir = path.dirname(file);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(PROPOSALS_FILE, JSON.stringify(data, null, 2));
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 function extractText(entry) {
@@ -38,51 +39,50 @@ function extractText(entry) {
   return parts.join(' ');
 }
 
-function toneScore(text) {
-  const positive = ['great', 'good', 'excellent', 'positive', 'success'];
-  const negative = ['bad', 'fail', 'error', 'negative', 'problem'];
-  let score = 0;
+function analyzeTone(text = '') {
+  const positive = ['success', 'completed', 'great', 'ok', 'good'];
+  const negative = ['fail', 'error', 'bad', 'wrong', 'misaligned'];
+  let score = 0.5;
   const lower = text.toLowerCase();
-  positive.forEach(w => { if (lower.includes(w)) score += 1; });
-  negative.forEach(w => { if (lower.includes(w)) score -= 1; });
+  for (const w of positive) if (lower.includes(w)) score += 0.1;
+  for (const w of negative) if (lower.includes(w)) score -= 0.1;
+  if (score > 1) score = 1;
+  if (score < 0) score = 0;
   return score;
+}
+
+function computeScores(logs) {
+  const totals = {};
+  const counts = {};
+  logs.forEach(entry => {
+    const agent = entry.agent;
+    if (!agent) return;
+    const text = extractText(entry) || '';
+    const s = analyzeTone(text);
+    totals[agent] = (totals[agent] || 0) + s;
+    counts[agent] = (counts[agent] || 0) + 1;
+  });
+  const scores = {};
+  for (const [agent, total] of Object.entries(totals)) {
+    scores[agent] = total / counts[agent];
+  }
+  return scores;
 }
 
 module.exports = {
   run: async () => {
     try {
-      const logs = readLogs();
-      if (!logs.length) {
-        return { summary: 'No logs available', misaligned: [] };
-      }
-
-      const toneByAgent = {};
-      logs.forEach(entry => {
-        if (!entry.agent) return;
-        const text = extractText(entry);
-        const score = toneScore(text);
-        if (!toneByAgent[entry.agent]) toneByAgent[entry.agent] = { total: 0, count: 0 };
-        toneByAgent[entry.agent].total += score;
-        toneByAgent[entry.agent].count += 1;
-      });
-
-      const misaligned = [];
+      const logs = readJson(LOG_FILE, []);
+      const scores = computeScores(logs);
+      const metadata = readJson(META_FILE, {});
       const proposals = [];
-      for (const [agent, data] of Object.entries(toneByAgent)) {
-        const avg = data.total / data.count;
-        if (avg < -0.5) {
-          misaligned.push(agent);
-          proposals.push({ agent, suggestion: 'Tone deviates negatively from norms' });
-        } else if (avg < 0) {
-          proposals.push({ agent, suggestion: 'Monitor communication tone' });
-        }
-      }
+      const misaligned = [];
+      let updated = false;
 
-      if (proposals.length) writeProposals(proposals);
+      for (const [agent, score] of Object.entries(scores)) {
+        if (!metadata[agent]) continue;
 
-      return { summary: `Checked ${logs.length} log entries`, misaligned, proposals };
-    } catch (err) {
-      return { error: `Guardian agent failed: ${err.message}` };
-    }
-  }
-};
+        metadata[agent].alignmentScore = score;
+
+        const flag = score < TH
+
