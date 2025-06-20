@@ -4,37 +4,38 @@ const { execSync } = require('child_process');
 
 const rootDir = path.resolve(__dirname, '..');
 const distDir = path.join(rootDir, 'dashboard', 'dist');
-const buildDir = path.join(rootDir, 'dashboard', 'build');
-let sourceDir = null;
+const destDir = path.join(rootDir, 'public', 'dashboard');
 
-if (fs.existsSync(distDir)) {
-  sourceDir = distDir;
-} else if (fs.existsSync(buildDir)) {
-  sourceDir = buildDir;
+function log(message) {
+  console.log(`[deploy-dashboard] ${message}`);
 }
 
-if (!sourceDir) {
-  console.error('Error: No dashboard build output found. Please run `npm run build` in the dashboard directory.');
+if (!fs.existsSync(distDir)) {
+  console.error('No dashboard build output found. Run `npm run build` in the dashboard directory first.');
   process.exit(1);
 }
 
-const destDir = path.join(rootDir, 'public', 'dashboard');
+try {
+  if (fs.existsSync(destDir)) {
+    fs.rmSync(destDir, { recursive: true, force: true });
+  }
+  fs.mkdirSync(destDir, { recursive: true });
 
-if (fs.existsSync(destDir)) {
-  fs.rmSync(destDir, { recursive: true, force: true });
+  if (process.platform === 'win32') {
+    execSync(`xcopy "${distDir}" "${destDir}" /E /I /Y`);
+  } else {
+    execSync(`cp -R ${distDir}/. ${destDir}`);
+  }
+  log(`Copied ${distDir} to ${destDir}`);
+} catch (err) {
+  console.error('Failed to copy dashboard files:', err.message);
+  process.exit(1);
 }
 
-fs.mkdirSync(destDir, { recursive: true });
-
 try {
-  // Use child_process to leverage system copy command for portability
-  if (process.platform === 'win32') {
-    execSync(`xcopy "${sourceDir}" "${destDir}" /E /I /Y`);
-  } else {
-    execSync(`cp -R ${sourceDir}/. ${destDir}`);
-  }
-  console.log(`Dashboard deployed: ${sourceDir} -> ${destDir}`);
+  execSync('firebase deploy --only hosting', { stdio: 'inherit' });
+  log('Firebase Hosting deployment complete.');
 } catch (err) {
-  console.error('Error copying dashboard build output:', err.message);
+  console.error('Firebase deploy failed:', err.message);
   process.exit(1);
 }

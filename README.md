@@ -91,13 +91,25 @@ The compiled assets are output to `public/dashboard` and automatically served vi
 
 ## 🔥 Firebase Deployment
 
-The `.firebaserc` already points to the production project `ai-agent-systems` and `firebase.json` only defines the `functions` block so deployments target Cloud Functions exclusively.
+The `.firebaserc` already points to the production project `ai-agent-systems`. `firebase.json` now defines both `functions` and `hosting` blocks so the dashboard can be served alongside the API.
 
-Initialize Firebase if needed and deploy the functions:
+After building the dashboard run the deployment script which copies the assets and triggers a Hosting deploy:
 
 ```bash
-firebase init functions
+npm run build --workspace=dashboard
+npm run deploy:dashboard
+```
+
+Deploy Cloud Functions as needed:
+
+```bash
 firebase deploy --only functions
+```
+
+In CI you can chain everything together:
+
+```bash
+npm run build --workspace=dashboard && npm run deploy:dashboard && firebase deploy
 ```
 
 Once deployed the public endpoints are available under:
