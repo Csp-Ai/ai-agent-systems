@@ -15,13 +15,14 @@
     "dependsOn": [
       "website-scanner-agent"
     ],
-    "enabled": true,
-    "version": "1.0.0",
-    "createdBy": "Csp-Ai",
-    "lastUpdated": "2025-06-19",
-    "locales": ["en", "es", "fr"],
-    "lifecycle": "production",
-    "locale": "en-US"
+      "enabled": true,
+      "version": "1.0.0",
+      "createdBy": "Csp-Ai",
+      "lastUpdated": "2025-06-19",
+      "critical": true,
+      "locales": ["en", "es", "fr"],
+      "lifecycle": "production",
+      "locale": "en-US"
   },
   "report-generator-agent": {
     "name": "Report Generator",
@@ -42,6 +43,7 @@
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
+    "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US"
@@ -63,6 +65,7 @@
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
+    "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US"
@@ -85,6 +88,7 @@
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
+    "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US"
@@ -103,6 +107,7 @@
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
+    "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US"
@@ -122,6 +127,7 @@
     "version": "1.0.0",
     "createdBy": "Csp-Ai",
     "lastUpdated": "2025-06-19",
+    "critical": true,
     "locales": ["en", "es", "fr"],
     "lifecycle": "production",
     "locale": "en-US"

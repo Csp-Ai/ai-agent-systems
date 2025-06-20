@@ -15,6 +15,7 @@ const {
   readAuditLogs,
   appendAuditLog,
 } = require('./auditLogger');
+const runHealthChecks = require('./healthCheck');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -706,6 +707,16 @@ app.post('/translate', async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Translation failed' });
+  }
+});
+
+// Health check summary
+app.get('/health-check', async (req, res) => {
+  try {
+    const summary = await runHealthChecks();
+    res.json(summary);
+  } catch (err) {
+    res.status(500).json({ error: 'Health check failed' });
   }
 });
 
