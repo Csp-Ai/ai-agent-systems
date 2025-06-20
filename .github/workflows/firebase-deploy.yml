@@ -15,10 +15,4 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm install -g firebase-tools
-      - run: firebase emulators:start --only functions --project demo &
-      - run: sleep 10 && kill $! || true
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}'
-          projectId: '${{ secrets.FIREBASE_PROJECT }}'
+      - run: firebase deploy --only functions --project ${{ secrets.FIREBASE_PROJECT }} --token ${{ secrets.FIREBASE_TOKEN }}
