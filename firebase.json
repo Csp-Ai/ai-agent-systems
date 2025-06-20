@@ -15,5 +15,11 @@
   },
   "database": {
     "rules": "database.rules.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "remoteconfig": {
+    "template": "remoteconfig.template.json"
   }
 }
