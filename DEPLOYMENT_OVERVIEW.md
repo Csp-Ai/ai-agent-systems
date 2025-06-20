@@ -47,3 +47,26 @@ The Dockerfile builds the React frontend during the container build so the `/` r
 3. Commit changes to GitHub.
 4. Trigger deployment via CI/CD or manually (`npm run deploy` or `gcloud run deploy`).
 5. The `postDeploySummary.js` script runs, and `/api/summary` reflects the new build.
+
+## CI/CD via GitHub Actions
+The workflow `.github/workflows/deploy.yml` builds the Docker image using `gcloud builds submit` and deploys it to Cloud Run whenever commits are pushed to `main`.
+
+### Service Account Setup
+1. Create a service account with Cloud Run and Cloud Build permissions:
+   ```bash
+   gcloud iam service-accounts create github-actions --display-name "GitHub Actions"
+   gcloud projects add-iam-policy-binding ai-agent-systems \
+       --member "serviceAccount:github-actions@ai-agent-systems.iam.gserviceaccount.com" \
+       --role "roles/run.admin"
+   gcloud projects add-iam-policy-binding ai-agent-systems \
+       --member "serviceAccount:github-actions@ai-agent-systems.iam.gserviceaccount.com" \
+       --role "roles/cloudbuild.builds.editor"
+   ```
+2. Generate a JSON key and download it:
+   ```bash
+   gcloud iam service-accounts keys create key.json \
+       --iam-account github-actions@ai-agent-systems.iam.gserviceaccount.com
+   ```
+3. Upload the `key.json` contents to the repository secret named `GCLOUD_SERVICE_KEY`.
+
+After deployment the workflow runs `npm run postdeploy:cloudrun` and `npm run postdeploy:summary` to record deployment details.
