@@ -21,8 +21,20 @@ if (process.cwd() !== rootDir) {
   process.chdir(rootDir);
 }
 
-const distDir = path.join(rootDir, 'dashboard', 'dist');
-const buildDir = path.join(rootDir, 'dashboard', 'build');
+const dashboardDir = path.join(rootDir, 'dashboard');
+
+try {
+  logInfo('Installing dashboard dependencies...');
+  execSync('npm install', { cwd: dashboardDir, stdio: 'inherit' });
+  logInfo('Building dashboard...');
+  execSync('npm run build', { cwd: dashboardDir, stdio: 'inherit' });
+} catch (err) {
+  logFailure(`Failed to build dashboard: ${err.message}`);
+  process.exit(1);
+}
+
+const distDir = path.join(dashboardDir, 'dist');
+const buildDir = path.join(dashboardDir, 'build');
 let sourceDir = null;
 
 if (fs.existsSync(distDir)) {
@@ -32,7 +44,7 @@ if (fs.existsSync(distDir)) {
 }
 
 if (!sourceDir) {
-  logFailure('No dashboard output found in dashboard/dist or dashboard/build');
+  logFailure('No dashboard output found after build');
   process.exit(1);
 }
 
@@ -59,11 +71,3 @@ try {
   process.exit(1);
 }
 
-try {
-  logInfo('Deploying to Firebase Hosting...');
-  execSync('firebase deploy --only hosting', { stdio: 'inherit' });
-  logSuccess('Firebase Hosting deployment complete');
-} catch (err) {
-  logFailure(`Firebase deploy failed: ${err.message}`);
-  process.exit(1);
-}
