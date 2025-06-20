@@ -6,7 +6,7 @@ const path = require('path');
 const multer = require('multer');
 const JSZip = require('jszip');
 const nodemailer = require('nodemailer');
-const PDFDocument = require('pdfkit');
+const { PDFDocument, StandardFonts: pdfFonts } = require('pdf-lib');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
@@ -18,8 +18,7 @@ const {
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
 const { reportSOP } = require('./sopReporter');
-const { db } = require('./db');
-const { admin } = require('../firebase');
+const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
 
 // Load environment variables from .env if present
@@ -586,15 +585,19 @@ async function handleSendReport(req, res) {
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
-    const pdfBuffer = await new Promise((resolve, reject) => {
-      const doc = new PDFDocument();
-      const buffers = [];
-      doc.on('data', b => buffers.push(b));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
-      doc.on('error', reject);
-      doc.text(report || 'AI Agent Report');
-      doc.end();
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const font = await pdfDoc.embedFont(pdfFonts.Helvetica);
+    const { width, height } = page.getSize();
+    const fontSize = 12;
+    page.drawText(report || 'AI Agent Report', {
+      x: 50,
+      y: height - 50 - fontSize,
+      size: fontSize,
+      font,
+      maxWidth: width - 100,
     });
+    const pdfBuffer = await pdfDoc.save();
 
     if (sessionId) {
       if (!fs.existsSync(REPORTS_DIR)) {
@@ -656,15 +659,19 @@ async function handleGenerateReport(req, res) {
     const { result, error } = await generator.run({ results: data.logs || [], clientName: data.clientName });
     if (error) return res.status(500).json({ error });
 
-    const pdfBuffer = await new Promise((resolve, reject) => {
-      const docPdf = new PDFDocument();
-      const buffers = [];
-      docPdf.on('data', b => buffers.push(b));
-      docPdf.on('end', () => resolve(Buffer.concat(buffers)));
-      docPdf.on('error', reject);
-      docPdf.text(result || 'AI Agent Report');
-      docPdf.end();
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+    const font = await pdfDoc.embedFont(pdfFonts.Helvetica);
+    const { width, height } = page.getSize();
+    const fontSize = 12;
+    page.drawText(result || 'AI Agent Report', {
+      x: 50,
+      y: height - 50 - fontSize,
+      size: fontSize,
+      font,
+      maxWidth: width - 100,
     });
+    const pdfBuffer = await pdfDoc.save();
 
     if (!fs.existsSync(REPORTS_DIR)) fs.mkdirSync(REPORTS_DIR, { recursive: true });
     fs.writeFileSync(path.join(REPORTS_DIR, `${sessionId}.pdf`), pdfBuffer);
