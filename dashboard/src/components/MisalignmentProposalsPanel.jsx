@@ -1,18 +1,21 @@
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useOrg } from '../OrgContext';
 
 export default function MisalignmentProposalsPanel() {
   const [proposals, setProposals] = useState([]);
+  const { orgId } = useOrg();
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'guardian', 'proposals'), snap => {
+    if (!orgId) return;
+    const unsub = onSnapshot(doc(db, 'orgs', orgId, 'guardian', 'proposals'), snap => {
       const data = snap.data() || {};
       const list = data.proposals || data.list || [];
       setProposals(Array.isArray(list) ? list : Object.values(list));
     });
     return unsub;
-  }, []);
+  }, [orgId]);
 
   return (
     <div className="p-4">
@@ -28,3 +31,4 @@ export default function MisalignmentProposalsPanel() {
     </div>
   );
 }
+
