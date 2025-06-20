@@ -2,16 +2,31 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+
 const app = express();
 
 const PORT = process.env.PORT || 8080;
 
-const staticDir = path.join(__dirname, 'frontend', 'dist');
-app.use(express.static(staticDir));
+// Serve the compiled landing page assets
+const frontendDir = path.join(__dirname, 'frontend', 'dist');
+app.use(express.static(frontendDir));
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+// Governance dashboard assets built from /dashboard
+const dashboardDir = path.join(__dirname, 'public', 'dashboard');
+app.use('/dashboard', express.static(dashboardDir));
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(dashboardDir, 'index.html'));
 });
+app.get('/dashboard/*', (req, res) => {
+  res.sendFile(path.join(dashboardDir, 'index.html'));
+});
+
+// Basic liveness probe used by Cloud Run and CI health checks
+const healthHandler = (req, res) => {
+  res.json({ status: 'ok' });
+};
+app.get('/health-check', healthHandler);
+app.get('/health', healthHandler);
 
 const SUMMARY_FILE = path.join(__dirname, 'logs', 'summary.json');
 
@@ -41,8 +56,13 @@ app.post('/api/refresh', (req, res) => {
   });
 });
 
+// Landing page served for the root and unmatched routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
+
 app.get('*', (req, res) => {
-  res.sendFile(path.join(staticDir, 'index.html'));
+  res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
 app.listen(PORT, () => {
