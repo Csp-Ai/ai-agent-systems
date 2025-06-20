@@ -6,6 +6,7 @@ export default function AgentInteractionVisualizer({ agents = [], logMessages = 
   const [positions, setPositions] = useState({});
   const [connections, setConnections] = useState([]);
   const [active, setActive] = useState({});
+  const processedIndex = useRef(0);
 
   // Measure agent icon positions
   useLayoutEffect(() => {
@@ -27,7 +28,8 @@ export default function AgentInteractionVisualizer({ agents = [], logMessages = 
 
   // Parse log messages for interactions
   useEffect(() => {
-    logMessages.forEach((msg) => {
+    for (let i = processedIndex.current; i < logMessages.length; i++) {
+      const msg = logMessages[i];
       const match = msg.match(/\[(.+?)\].*?\[(.+?)\]/);
       if (match) {
         const from = match[1];
@@ -47,7 +49,8 @@ export default function AgentInteractionVisualizer({ agents = [], logMessages = 
           });
         }, 1200);
       }
-    });
+    }
+    processedIndex.current = logMessages.length;
   }, [logMessages]);
 
   return (
