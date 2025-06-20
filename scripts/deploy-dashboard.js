@@ -22,6 +22,13 @@ if (process.cwd() !== rootDir) {
 }
 
 const dashboardDir = path.join(rootDir, 'dashboard');
+const destDir = path.join(rootDir, 'public', 'dashboard');
+
+// Clean any existing build output
+if (fs.existsSync(destDir)) {
+  logInfo('Cleaning old dashboard build...');
+  fs.rmSync(destDir, { recursive: true, force: true });
+}
 
 try {
   logInfo('Installing dashboard dependencies...');
@@ -37,7 +44,9 @@ const distDir = path.join(dashboardDir, 'dist');
 const buildDir = path.join(dashboardDir, 'build');
 let sourceDir = null;
 
-if (fs.existsSync(distDir)) {
+if (fs.existsSync(destDir)) {
+  sourceDir = destDir;
+} else if (fs.existsSync(distDir)) {
   sourceDir = distDir;
 } else if (fs.existsSync(buildDir)) {
   sourceDir = buildDir;
@@ -48,26 +57,23 @@ if (!sourceDir) {
   process.exit(1);
 }
 
-const destDir = path.join(rootDir, 'public', 'dashboard');
-
-logInfo(`Build source directory: ${sourceDir}`);
-logInfo(`Destination directory: ${destDir}`);
-
-try {
-  if (fs.existsSync(destDir)) {
-    fs.rmSync(destDir, { recursive: true, force: true });
+if (sourceDir !== destDir) {
+  logInfo(`Build source directory: ${sourceDir}`);
+  logInfo(`Destination directory: ${destDir}`);
+  try {
+    fs.mkdirSync(destDir, { recursive: true });
+    logInfo('Copying dashboard build output...');
+    if (process.platform === 'win32') {
+      execSync(`xcopy "${sourceDir}" "${destDir}" /E /I /Y`);
+    } else {
+      execSync(`cp -R "${sourceDir}/." "${destDir}"`);
+    }
+    logSuccess(`Copied ${sourceDir} to ${destDir}`);
+  } catch (err) {
+    logFailure(`Failed to copy dashboard files: ${err.message}`);
+    process.exit(1);
   }
-  fs.mkdirSync(destDir, { recursive: true });
-
-  logInfo('Copying dashboard build output...');
-  if (process.platform === 'win32') {
-    execSync(`xcopy "${sourceDir}" "${destDir}" /E /I /Y`);
-  } else {
-    execSync(`cp -R "${sourceDir}/." "${destDir}"`);
-  }
-  logSuccess(`Copied ${sourceDir} to ${destDir}`);
-} catch (err) {
-  logFailure(`Failed to copy dashboard files: ${err.message}`);
-  process.exit(1);
+} else {
+  logSuccess(`Dashboard built in ${destDir}`);
 }
 
