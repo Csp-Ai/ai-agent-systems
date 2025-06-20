@@ -7,7 +7,8 @@ const PORT = process.env.PORT || 8080;
 const distDir = path.join(__dirname, 'frontend', 'dist');
 app.use(express.static(distDir));
 
-app.get('*', (req, res) => {
+// Serve the frontend entry for any route not matched by static assets
+app.get('*', (_req, res) => {
   res.sendFile(path.join(distDir, 'index.html'));
 });
 
