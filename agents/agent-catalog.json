@@ -1,0 +1,9 @@
+{
+  "sales": ["board-agent"],
+  "marketing": ["insights-agent", "website-scanner-agent"],
+  "operations": ["guardian-agent", "process-guardian-agent", "vision-guard-agent", "report-generator-agent"],
+  "finance": ["data-analyst-agent"],
+  "hr": ["mentor-agent"],
+  "it": ["codex-qa-agent"],
+  "support": []
+}
