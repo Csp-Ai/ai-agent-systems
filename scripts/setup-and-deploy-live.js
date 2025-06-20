@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+console.log("\ud83d\ude80 Live deploy script initialized");
 
 const { execSync } = require('child_process');
 const path = require('path');
