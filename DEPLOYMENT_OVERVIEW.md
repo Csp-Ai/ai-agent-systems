@@ -23,10 +23,11 @@ Deployments can be triggered manually or from GitHub Actions. After each deploy 
   npm run deploy
   ```
 - Deploy backend to Cloud Run (example):
-  ```bash
-  gcloud builds submit --tag gcr.io/PROJECT_ID/ai-agent-systems
-  gcloud run deploy ai-agent-systems --image gcr.io/PROJECT_ID/ai-agent-systems --region REGION
-  ```
+```bash
+gcloud builds submit --tag gcr.io/PROJECT_ID/ai-agent-systems
+gcloud run deploy ai-agent-systems --image gcr.io/PROJECT_ID/ai-agent-systems --region REGION
+```
+The Dockerfile builds the React frontend during the container build so the `/` route serves the compiled assets out of the box.
 - Post-deploy summary:
   ```bash
   npm run postdeploy:cloudrun
@@ -34,7 +35,7 @@ Deployments can be triggered manually or from GitHub Actions. After each deploy 
   ```
 
 ## Route Summary
-- `/` – Serves the Vite-built landing page.
+ - `/` – Serves the Vite-built landing page (Cloud Run loads this by default).
 - `/dashboard` – Governance dashboard UI.
 - `/api/summary` – Returns the latest deployment summary from `logs/summary.json`.
 - `/health-check` – Basic service health endpoint.
