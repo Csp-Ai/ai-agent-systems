@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes arc-draw {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+.animate-arc {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: arc-draw 0.8s ease-out forwards;
+}
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
+}

@@ -18,6 +18,8 @@ const LandingPage = () => {
   const [showPricing, setShowPricing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [logMessages, setLogMessages] = useState([]);
+  const agentList = ['insights-agent', 'trends-agent', 'anomaly-agent', 'forecast-agent'];
 
   const analysisSteps = [
     { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows" },
@@ -78,6 +80,21 @@ const LandingPage = () => {
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
+  // Simulate agent collaboration log messages when analyzing
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    const msgs = [
+      '[insights-agent] Sending data to [trends-agent]',
+      '[forecast-agent] requesting anomaly-agent support...'
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      setLogMessages((logs) => [...logs, msgs[i % msgs.length]]);
+      i++;
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isAnalyzing]);
+
   useEffect(() => {
     if (analysisComplete && sessionId && !emailSent) {
       const sendReport = async () => {
@@ -110,11 +127,10 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="relative z-10">
-        {/* Form & Tracker */}
         <section className="px-6 py-20 text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl font-bold text-white mb-6">Start Your AI Analysis</h1>
-            <div className="bg-white/10 p-6 rounded-xl">
+            <div className="bg-white/10 p-6 rounded-xl relative overflow-hidden">
               {!isAnalyzing && (
                 <>
                   <input
@@ -137,12 +153,13 @@ const LandingPage = () => {
                   />
                   <button
                     onClick={handleAnalyze}
-                    className="w-full bg-blue-600 text-white p-2 rounded"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white p-2 rounded"
                   >
                     Start Analysis
                   </button>
                 </>
               )}
+
               {isAnalyzing && (
                 <div className="relative">
                   <AgentTracker
@@ -150,16 +167,24 @@ const LandingPage = () => {
                     currentStep={currentStep}
                     status={stepStatus}
                   />
+                  
+                  {/* Animated Overlay + Console View */}
                   {currentStep === 0 && (
-                    <div className="relative mt-4">
-                      <div className="absolute inset-0">
-                        <AgentInteractionVisualizer />
+                    <div className="relative mt-4 w-full">
+                      <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
+                        <AgentInteractionVisualizer
+                          agents={agentList}
+                          logMessages={logMessages}
+                        />
                       </div>
-                      <AgentConsoleView />
+                      <div className="relative z-10">
+                        <AgentConsoleView />
+                      </div>
                     </div>
                   )}
                 </div>
               )}
+
               {analysisComplete && emailSent && (
                 <div className="mt-4 flex flex-col items-center">
                   <p className="text-green-400">✅ Email Sent!</p>
@@ -184,3 +209,31 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0px rgba(0, 255, 255, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.9));
+  }
+}
+
+@keyframes arc-flow {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.drop-shadow-glow {
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}
+
+.animate-arc {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: arc-flow 0.8s ease forwards;
+}
+
