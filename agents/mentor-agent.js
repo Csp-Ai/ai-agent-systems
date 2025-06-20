@@ -5,6 +5,7 @@ const LOG_DIR = path.join(__dirname, '..', 'logs');
 const BENCH_FILE = path.join(LOG_DIR, 'agent-benchmarks.json');
 const AUDIT_FILE = path.join(LOG_DIR, 'audit.json');
 const PLAN_FILE = path.join(LOG_DIR, 'development-plans.json');
+const GUIDE = path.join('docs', 'AGENT_CONSTITUTION.md');
 
 function readJson(file, defaultValue) {
   try {
@@ -28,13 +29,15 @@ function analyzeBenchmarks(benchmarks) {
     if (b.successRate !== undefined && b.successRate < 0.9) {
       issues.push({
         agent: b.agent,
-        suggestion: `Improve success rate (currently ${b.successRate})`
+        suggestion: `Improve success rate (currently ${b.successRate})`,
+        guideline: GUIDE
       });
     }
     if (b.avgResponseTime !== undefined && b.avgResponseTime > 1300) {
       issues.push({
         agent: b.agent,
-        suggestion: `Reduce avg response time of ${b.avgResponseTime}ms`
+        suggestion: `Reduce avg response time of ${b.avgResponseTime}ms`,
+        guideline: GUIDE
       });
     }
   });
@@ -54,7 +57,8 @@ function analyzeAudit(auditLogs) {
     if (count > 3) {
       plans.push({
         agent,
-        suggestion: `Investigate frequent errors (${count} recent)`
+        suggestion: `Investigate frequent errors (${count} recent)`,
+        guideline: GUIDE
       });
     }
   }
