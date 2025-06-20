@@ -5,6 +5,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const clipboardy = require('clipboardy');
+const { logDeployment } = require('./deploymentLogger');
 
 const color = {
   red: text => `\x1b[31m${text}\x1b[0m`,
@@ -164,9 +165,11 @@ async function main() {
     log(color.green, `URL: ${url}`);
   }
   log(color.green, `Directory used: ${hostingDir}`);
+  logDeployment({ timestamp, success: true, url, directory: hostingDir });
 }
 
-main().catch(() => {
+main().catch(err => {
   log(color.red, '\n🔥 Setup & deployment process terminated due to errors.');
+  logDeployment({ timestamp: new Date().toISOString(), success: false, error: err.message });
   process.exit(1);
 });
