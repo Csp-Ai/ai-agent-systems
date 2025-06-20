@@ -24,6 +24,41 @@ const LT_KEY = process.env.TRANSLATE_KEY || '';
 
 const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
 
+async function translateText(text, target, source = 'en') {
+  try {
+    const resp = await fetch(`${LT_URL}/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: text, target, source, api_key: LT_KEY }),
+    });
+    const data = await resp.json();
+    return data.translatedText || text;
+  } catch {
+    return text;
+  }
+}
+
+async function translateOutput(output, target) {
+  if (!target || target.toLowerCase().startsWith('en')) return output;
+
+  if (typeof output === 'string') {
+    return await translateText(output, target);
+  }
+  if (Array.isArray(output)) {
+    const arr = [];
+    for (const item of output) arr.push(await translateOutput(item, target));
+    return arr;
+  }
+  if (output && typeof output === 'object') {
+    const obj = {};
+    for (const key of Object.keys(output)) {
+      obj[key] = await translateOutput(output[key], target);
+    }
+    return obj;
+  }
+  return output;
+}
+
 function isAuthorized(req) {
   const key = req.headers['x-admin-key'] || req.query.key;
   return key === ADMIN_KEY;
@@ -398,7 +433,7 @@ app.post('/submit-agent', upload.single('code'), async (req, res) => {
 
 // Endpoint to execute a specific agent
 app.post('/run-agent', async (req, res) => {
-  const { agent: agentName, input = {}, sessionId, step } = req.body || {};
+  const { agent: agentName, input = {}, sessionId, step, locale } = req.body || {};
 
   if (!agentName) {
     appendLog({
@@ -413,7 +448,11 @@ app.post('/run-agent', async (req, res) => {
 
   try {
     const results = {};
-    const finalResult = await executeAgent(agentName, input, results, [], sessionId, step);
+    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step);
+    if (locale) {
+      finalResult = await translateOutput(finalResult, locale);
+      results[agentName] = finalResult;
+    }
     return res.json({ result: finalResult, allResults: results });
   } catch (err) {
     return res.status(500).json({ error: err.message });
