@@ -141,3 +141,6 @@ dist
 firebase-service-account.json
 serviceAccountKey.json
 *.service-account.json
+
+# Dashboard build output
+public/dashboard/
