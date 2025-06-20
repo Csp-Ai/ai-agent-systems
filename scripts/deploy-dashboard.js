@@ -2,17 +2,35 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
+// Ensure script runs from repository root
 const rootDir = path.resolve(__dirname, '..');
-const distDir = path.join(rootDir, 'dashboard', 'dist');
-const destDir = path.join(rootDir, 'public', 'dashboard');
-
-function log(message) {
-  console.log(`[deploy-dashboard] ${message}`);
+if (process.cwd() !== rootDir) {
+  process.chdir(rootDir);
 }
 
-if (!fs.existsSync(distDir)) {
-  console.error('No dashboard build output found. Run `npm run build` in the dashboard directory first.');
+const distDir = path.join(rootDir, 'dashboard', 'dist');
+const buildDir = path.join(rootDir, 'dashboard', 'build');
+let sourceDir = null;
+
+if (fs.existsSync(distDir)) {
+  sourceDir = distDir;
+} else if (fs.existsSync(buildDir)) {
+  sourceDir = buildDir;
+}
+
+if (!sourceDir) {
+  console.error('\x1b[31m❌ No dashboard output found in dashboard/dist or dashboard/build\x1b[0m');
   process.exit(1);
+}
+
+const destDir = path.join(rootDir, 'public', 'dashboard');
+
+function logSuccess(msg) {
+  console.log(`\x1b[32m✅ ${msg}\x1b[0m`);
+}
+
+function logFailure(msg) {
+  console.error(`\x1b[31m❌ ${msg}\x1b[0m`);
 }
 
 try {
@@ -22,20 +40,20 @@ try {
   fs.mkdirSync(destDir, { recursive: true });
 
   if (process.platform === 'win32') {
-    execSync(`xcopy "${distDir}" "${destDir}" /E /I /Y`);
+    execSync(`xcopy "${sourceDir}" "${destDir}" /E /I /Y`);
   } else {
-    execSync(`cp -R ${distDir}/. ${destDir}`);
+    execSync(`cp -R ${sourceDir}/. ${destDir}`);
   }
-  log(`Copied ${distDir} to ${destDir}`);
+  logSuccess(`Copied ${sourceDir} to ${destDir}`);
 } catch (err) {
-  console.error('Failed to copy dashboard files:', err.message);
+  logFailure(`Failed to copy dashboard files: ${err.message}`);
   process.exit(1);
 }
 
 try {
   execSync('firebase deploy --only hosting', { stdio: 'inherit' });
-  log('Firebase Hosting deployment complete.');
+  logSuccess('Firebase Hosting deployment complete');
 } catch (err) {
-  console.error('Firebase deploy failed:', err.message);
+  logFailure(`Firebase deploy failed: ${err.message}`);
   process.exit(1);
 }
