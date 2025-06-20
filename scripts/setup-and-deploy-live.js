@@ -25,10 +25,10 @@ function exec(command, opts = {}) {
 }
 
 function runStep(description, command, opts = {}) {
-  const retries = opts.retries || 0;
+  const retries = opts.retries ?? 2;
   for (let attempt = 0; ; attempt++) {
     try {
-      log(color.cyan, `\n➡ ${description}...`);
+      log(color.yellow, `\n➡ ${description}...`);
       const result = exec(command, opts);
       if (opts.capture) process.stdout.write(result);
       log(color.green, `✅ ${description} complete.`);
@@ -80,7 +80,7 @@ function isLoggedIn() {
 async function ensureFirebaseCLI() {
   if (hasFirebaseCLI()) return;
   log(color.yellow, 'Firebase CLI not found. Installing...');
-  runStep('Install Firebase CLI', 'npm install -g firebase-tools', { retries: 1 });
+  runStep('Install Firebase CLI', 'npm install -g firebase-tools', { retries: 2 });
 }
 
 function openUrl(url) {
@@ -109,15 +109,15 @@ async function main() {
   await ensureFirebaseCLI();
 
   if (!isLoggedIn()) {
-    runStep('Firebase login', 'firebase login');
+    runStep('Firebase login', 'firebase login', { retries: 2 });
   }
 
-  runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true, retries: 1 });
-  runStep('Deploy dashboard', 'npm run deploy:dashboard', { retryAuth: true, retries: 1 });
+  runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true, retries: 2 });
+  runStep('Deploy dashboard', 'npm run deploy:dashboard', { retryAuth: true, retries: 2 });
   const deployOutput = runStep('Firebase deploy', 'npm run deploy', {
     capture: true,
     retryAuth: true,
-    retries: 1,
+    retries: 2,
   });
   const hostingMatch = deployOutput.match(/Hosting URL[:\s]+(https?:\/\/[^\s]+)/i);
   const url = hostingMatch ? hostingMatch[1] : (deployOutput.match(/https?:\/\/[^\s]+/) || [])[0];
