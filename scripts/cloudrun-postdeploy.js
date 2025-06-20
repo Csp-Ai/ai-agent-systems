@@ -30,7 +30,7 @@ if (process.cwd() !== rootDir) {
   process.chdir(rootDir);
 }
 
-const DEPLOY_LOG = path.join(rootDir, 'logs', 'deployments.json');
+const DEPLOY_LOG = path.join(rootDir, 'logs', 'postdeploy', 'cloudrun-postdeploy.json');
 
 function readLog() {
   try {
@@ -89,6 +89,15 @@ function rollbackTo(revision) {
     logFailure(`Health check request failed: ${err.message}`);
   }
 
+  logInfo(`Checking root route at ${url} ...`);
+  let rootOk = false;
+  try {
+    const res = await fetch(url);
+    rootOk = res.ok;
+  } catch (err) {
+    logFailure(`Root route request failed: ${err.message}`);
+  }
+
   if (healthy) {
     logSuccess('Health check passed');
     logEntry.status = 'healthy';
@@ -110,6 +119,8 @@ function rollbackTo(revision) {
       logEntry.error = 'No previous revision';
     }
   }
+
+  logEntry.rootAccessible = rootOk;
 
   const data = readLog();
   data.push(logEntry);
