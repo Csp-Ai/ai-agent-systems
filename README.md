@@ -70,6 +70,9 @@ npm install
 # Initialize Firebase hosting
 npm run setup:firebase
 
+# Deploy dashboard and hosting
+npm run deploy
+
 # Run development server
 npm start
 ```
@@ -96,23 +99,16 @@ The compiled assets are output to `public/dashboard` and automatically served vi
 
 The `.firebaserc` already points to the production project `ai-agent-systems`. `firebase.json` now defines both `functions` and `hosting` blocks so the dashboard can be served alongside the API.
 
-After building the dashboard run the deployment script which copies the assets and triggers a Hosting deploy:
+Run the deployment script to build the dashboard, copy the assets, and deploy to Firebase Hosting:
 
 ```bash
-npm run build --workspace=dashboard
-npm run deploy:dashboard
+npm run deploy
 ```
 
-Deploy Cloud Functions as needed:
+This will output the Firebase Hosting URL on success. Deploy Cloud Functions separately if needed:
 
 ```bash
 firebase deploy --only functions
-```
-
-In CI you can chain everything together:
-
-```bash
-npm run build --workspace=dashboard && npm run deploy:dashboard && firebase deploy
 ```
 
 Once deployed the public endpoints are available under:

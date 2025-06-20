@@ -22,9 +22,9 @@ if (process.cwd() !== rootDir) {
 }
 
 try {
-  logInfo('Running deploy-dashboard.js...');
+  logInfo('Building and copying dashboard...');
   execSync('node scripts/deploy-dashboard.js', { stdio: 'inherit' });
-  logSuccess('Dashboard deployment finished.');
+  logSuccess('Dashboard build step complete.');
 } catch (err) {
   logFailure(`Failed to deploy dashboard: ${err.message}`);
   process.exit(1);
