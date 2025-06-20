@@ -10,14 +10,10 @@
   "scripts": {
     "start": "node functions/index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
-    "lint": "eslint .",
-    "monitor": "node scripts/agentHealthMonitor.js",
-    "guardian": "node scripts/runGuardian.js",
-    "resolve-package-conflicts": "node scripts/packageConflictResolver.js",
     "setup:firebase": "node scripts/firebase-setup.js",
     "deploy:dashboard": "node scripts/deploy-dashboard.js",
-    "setup:firebase": "node scripts/firebase-setup.js",
-    "deploy": "node scripts/deploy-to-firebase.js"
+    "deploy": "node scripts/deploy-to-firebase.js",
+    "setup:live": "node scripts/setup-and-deploy-live.js"
   },
 
   "keywords": [
