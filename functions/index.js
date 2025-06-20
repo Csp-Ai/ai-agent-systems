@@ -18,6 +18,9 @@ const {
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
 const { reportSOP } = require('./sopReporter');
+const { db } = require('./db');
+const { admin } = require('../firebase');
+const stripe = require('stripe')(process.env.STRIPE_KEY || '');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -90,6 +93,52 @@ function validateToken(token) {
   }
   loginTokens.delete(token);
   return data.email;
+}
+
+async function verifyUser(req) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return null;
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    return decoded.uid;
+  } catch {
+    return null;
+  }
+}
+
+async function getUserPlan(uid) {
+  try {
+    const doc = await db.collection('users').doc(uid).collection('subscription').doc('current').get();
+    return doc.exists ? doc.data().plan || 'free' : 'free';
+  } catch {
+    return 'free';
+  }
+}
+
+async function getUsageCount(uid) {
+  const start = new Date();
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  const snap = await db
+    .collection('users')
+    .doc(uid)
+    .collection('usage')
+    .where('timestamp', '>=', start.toISOString())
+    .get();
+  return snap.size;
+}
+
+async function recordUsage(uid, sessionId, increments = {}) {
+  const ref = db.collection('users').doc(uid).collection('usage').doc(sessionId);
+  const update = { timestamp: new Date().toISOString() };
+  if (increments.stepCount)
+    update.stepCount = admin.firestore.FieldValue.increment(increments.stepCount);
+  if (increments.agentRuns)
+    update.agentRuns = admin.firestore.FieldValue.increment(increments.agentRuns);
+  if (increments.pdfGenerated)
+    update.pdfGenerated = admin.firestore.FieldValue.increment(increments.pdfGenerated);
+  await ref.set(update, { merge: true });
 }
 
 const LOG_DIR = path.join(__dirname, '..', 'logs');
@@ -471,6 +520,14 @@ app.post('/submit-agent', upload.single('code'), async (req, res) => {
 async function handleExecuteAgent(req, res) {
   const { agent: agentName, input = {}, sessionId, step, locale } = req.body || {};
 
+  const uid = await verifyUser(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  const plan = await getUserPlan(uid);
+  const usage = await getUsageCount(uid);
+  if (plan !== 'pro' && usage >= 3) {
+    return res.status(403).json({ error: 'limit' });
+  }
+
   if (!agentName) {
     appendLog({
       timestamp: new Date().toISOString(),
@@ -491,6 +548,7 @@ async function handleExecuteAgent(req, res) {
     }
     const response = { result: finalResult, allResults: results };
     res.json(response);
+    await recordUsage(uid, sessionId || Date.now().toString(), { stepCount: 1, agentRuns: 1 });
     runLifecycleCheck();
     return;
   } catch (err) {
@@ -507,6 +565,9 @@ async function handleSendReport(req, res) {
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
   }
+
+  const uid = await verifyUser(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const pdfBuffer = await new Promise((resolve, reject) => {
@@ -550,6 +611,7 @@ async function handleSendReport(req, res) {
     });
 
     res.json({ success: true });
+    await recordUsage(uid, sessionId || Date.now().toString(), { pdfGenerated: 1 });
     runLifecycleCheck();
   } catch (err) {
     console.error('Failed to send report email:', err);
@@ -558,6 +620,50 @@ async function handleSendReport(req, res) {
 }
 
 app.post('/send-report', handleSendReport);
+
+app.get('/billing/info', async (req, res) => {
+  const uid = await verifyUser(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  const plan = await getUserPlan(uid);
+  const usage = await getUsageCount(uid);
+  res.json({ plan, usage });
+});
+
+app.post('/create-checkout-session', async (req, res) => {
+  const uid = await verifyUser(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [
+        { price: process.env.STRIPE_PRO_PRICE_ID, quantity: 1 }
+      ],
+      success_url: process.env.CHECKOUT_SUCCESS_URL || 'https://example.com?success=1',
+      cancel_url: process.env.CHECKOUT_CANCEL_URL || 'https://example.com?canceled=1',
+      metadata: { uid }
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe session error', err);
+    res.status(500).json({ error: 'stripe' });
+  }
+});
+
+app.post('/stripe/webhook', async (req, res) => {
+  const event = req.body;
+  if (event.type === 'invoice.paid') {
+    const uid = event.data.object.metadata?.uid;
+    if (uid) {
+      await db
+        .collection('users')
+        .doc(uid)
+        .collection('subscription')
+        .doc('current')
+        .set({ plan: 'pro', status: 'active' }, { merge: true });
+    }
+  }
+  res.json({ received: true });
+});
 
 // Send magic login link to client email
 app.post('/client/send-link', async (req, res) => {

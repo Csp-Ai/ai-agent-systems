@@ -127,6 +127,11 @@ export default function AgentBuilder() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ agent: step.id, input: step.params })
         });
+        if (res.status === 403) {
+          alert("You've reached your monthly limit.");
+          setRunning(false);
+          return;
+        }
         const data = await res.json();
         if (data.error) {
           setLogs(prev => [...prev, `${step.id} error: ${data.error}`]);
