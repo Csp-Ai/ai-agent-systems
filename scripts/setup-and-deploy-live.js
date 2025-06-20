@@ -118,6 +118,32 @@ function ensureHostingDir() {
   return data.hosting.public;
 }
 
+function isRepoClean() {
+  try {
+    return exec('git status --porcelain', { capture: true }).trim() === '';
+  } catch {
+    return false;
+  }
+}
+
+function formatTag(date) {
+  const pad = n => n.toString().padStart(2, '0');
+  return `v${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+function tagAndPush(date) {
+  const tag = formatTag(date);
+  try {
+    exec(`git tag ${tag}`);
+    exec(`git push origin ${tag}`);
+    log(color.green, `Git tag ${tag} pushed to origin.`);
+  } catch (err) {
+    log(color.red, `❌ Failed to push git tag ${tag}`);
+    if (err.stdout) process.stdout.write(err.stdout.toString());
+    if (err.stderr) process.stderr.write(err.stderr.toString());
+  }
+}
+
 async function main() {
   log(color.magenta, '\n🚀 Live Setup & Deployment Pipeline');
 
@@ -155,7 +181,8 @@ async function main() {
     }
   }
 
-  const timestamp = new Date().toISOString();
+  const date = new Date();
+  const timestamp = date.toISOString();
   if (sizeLines.length) {
     log(color.cyan, '\nDeployed file sizes:\n' + sizeLines.join('\n'));
   }
@@ -164,6 +191,12 @@ async function main() {
     log(color.green, `URL: ${url}`);
   }
   log(color.green, `Directory used: ${hostingDir}`);
+
+  if (isRepoClean()) {
+    tagAndPush(date);
+  } else {
+    log(color.yellow, '⚠️  Repository has uncommitted changes; skipping git tag.');
+  }
 }
 
 main().catch(() => {
