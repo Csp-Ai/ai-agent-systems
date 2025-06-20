@@ -36,6 +36,19 @@ const LandingPage = () => {
     }
   }, []);
 
+  // Poll status while analysis is running
+  useEffect(() => {
+    if (!isAnalyzing || analysisComplete || !sessionId) return;
+
+    // immediately fetch once when starting
+    fetchStatus(sessionId);
+    const interval = setInterval(() => {
+      fetchStatus(sessionId);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isAnalyzing, analysisComplete, sessionId]);
+
   useEffect(() => {
     if (sessionId) {
       localStorage.setItem('sessionId', sessionId);
