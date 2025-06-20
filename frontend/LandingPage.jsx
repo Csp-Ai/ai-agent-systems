@@ -34,6 +34,19 @@ const LandingPage = () => {
     }
   }, []);
 
+  // Poll status periodically while analyzing
+  useEffect(() => {
+    if (!isAnalyzing || analysisComplete || !sessionId) return;
+
+    // Trigger an immediate status check and then poll
+    fetchStatus(sessionId);
+    const interval = setInterval(() => {
+      fetchStatus(sessionId);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isAnalyzing, analysisComplete, sessionId]);
+
   useEffect(() => {
     if (sessionId) {
       localStorage.setItem('sessionId', sessionId);
