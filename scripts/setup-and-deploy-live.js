@@ -52,7 +52,7 @@ process.chdir(rootDir);
 
 log(color.magenta, '\n🚀 Live Setup & Deployment Pipeline');
 
-run('node scripts/firebase-setup.js', 'Firebase setup');
+run('npm run setup:firebase', 'Firebase setup');
 run('npm --prefix dashboard run build', 'Building dashboard with Vite');
 
 const deployOutput = run('firebase deploy --only hosting', 'Deploying to Firebase Hosting', { capture: true });
