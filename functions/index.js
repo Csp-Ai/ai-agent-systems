@@ -130,6 +130,15 @@ function appendLog(entry) {
   writeLogs(logs);
 }
 
+async function runLifecycleCheck() {
+  try {
+    const { evaluate } = require('../scripts/evaluate-lifecycle');
+    await evaluate();
+  } catch (err) {
+    console.error('Lifecycle check failed:', err.message);
+  }
+}
+
 function ensureSessionFiles() {
   if (!fs.existsSync(LOG_DIR)) {
     fs.mkdirSync(LOG_DIR, { recursive: true });
@@ -441,7 +450,7 @@ app.post('/submit-agent', upload.single('code'), async (req, res) => {
 });
 
 // Endpoint to execute a specific agent
-app.post('/run-agent', async (req, res) => {
+async function handleExecuteAgent(req, res) {
   const { agent: agentName, input = {}, sessionId, step, locale } = req.body || {};
 
   if (!agentName) {
@@ -462,14 +471,20 @@ app.post('/run-agent', async (req, res) => {
       finalResult = await translateOutput(finalResult, locale);
       results[agentName] = finalResult;
     }
-    return res.json({ result: finalResult, allResults: results });
+    const response = { result: finalResult, allResults: results };
+    res.json(response);
+    runLifecycleCheck();
+    return;
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
-});
+}
+
+app.post('/run-agent', handleExecuteAgent);
+app.post('/executeAgent', handleExecuteAgent);
 
 // Endpoint to email report as PDF attachment
-app.post('/send-report', async (req, res) => {
+async function handleSendReport(req, res) {
   const { email, report = '', sessionId } = req.body || {};
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
@@ -517,11 +532,14 @@ app.post('/send-report', async (req, res) => {
     });
 
     res.json({ success: true });
+    runLifecycleCheck();
   } catch (err) {
     console.error('Failed to send report email:', err);
     res.status(500).json({ error: 'Failed to send email' });
   }
-});
+}
+
+app.post('/send-report', handleSendReport);
 
 // Send magic login link to client email
 app.post('/client/send-link', async (req, res) => {
@@ -700,7 +718,7 @@ app.post('/detect-language', async (req, res) => {
 });
 
 // LibreTranslate - translate text
-app.post('/translate', async (req, res) => {
+async function handleTranslate(req, res) {
   const { text, target, source } = req.body || {};
   if (!text || !target) {
     return res.status(400).json({ error: 'text and target are required' });
@@ -713,9 +731,18 @@ app.post('/translate', async (req, res) => {
     });
     const data = await resp.json();
     res.json(data);
+    runLifecycleCheck();
   } catch (err) {
     res.status(500).json({ error: 'Translation failed' });
   }
+}
+
+app.post('/translate', handleTranslate);
+
+app.get('/report', (req, res) => {
+  const logs = readLogs();
+  res.json(logs);
+  runLifecycleCheck();
 });
 
 // Health check summary
@@ -728,7 +755,7 @@ app.get('/health-check', async (req, res) => {
   }
 });
 
-const functions = require('firebase-functions');
+const { functions } = require('../firebase');
 
 module.exports.app = functions.https.onRequest(app);
 
@@ -751,3 +778,11 @@ exports.constitutionCheck = functions.https.onCall(async () => {
   require('../scripts/constitution-check');
   return { result: 'done' };
 });
+
+exports.translate = functions.https.onRequest(handleTranslate);
+exports.report = functions.https.onRequest((req, res) => {
+  const logs = readLogs();
+  res.json(logs);
+  runLifecycleCheck();
+});
+exports.executeAgent = functions.https.onRequest(handleExecuteAgent);
