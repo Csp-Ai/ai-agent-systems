@@ -9,7 +9,8 @@
     "monitor": "node scripts/agentHealthMonitor.js",
     "guardian": "node scripts/runGuardian.js",
     "lint": "eslint .",
-    "resolve-package-conflicts": "node scripts/packageConflictResolver.js"
+    "resolve-package-conflicts": "node scripts/packageConflictResolver.js",
+    "deploy:dashboard": "node scripts/deploy-dashboard.js"
   },
   "keywords": [
     "AI",
