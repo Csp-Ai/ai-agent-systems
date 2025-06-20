@@ -15,10 +15,18 @@ function log(colorFn, message) {
   console.log(colorFn(message));
 }
 
-function run(command, description, opts = {}) {
+function exec(command, opts = {}) {
+  return execSync(command, {
+    stdio: opts.capture ? 'pipe' : 'inherit',
+    encoding: 'utf8',
+    cwd: opts.cwd,
+  });
+}
+
+function runStep(description, command, opts = {}) {
   try {
     log(color.cyan, `\n➡ ${description}...`);
-    const result = execSync(command, { stdio: opts.capture ? 'pipe' : 'inherit', encoding: 'utf8', cwd: opts.cwd });
+    const result = exec(command, opts);
     if (opts.capture) process.stdout.write(result);
     log(color.green, `✅ ${description} complete.`);
     return result;
@@ -26,7 +34,25 @@ function run(command, description, opts = {}) {
     log(color.red, `❌ ${description} failed.`);
     if (err.stdout) process.stdout.write(err.stdout.toString());
     if (err.stderr) process.stderr.write(err.stderr.toString());
-    process.exit(1);
+
+    if (opts.retryAuth) {
+      try {
+        log(color.yellow, '➡ Attempting Firebase login...');
+        exec('firebase login', { stdio: 'inherit' });
+        log(color.green, '✅ Firebase login successful.');
+        log(color.cyan, `Retrying ${description.toLowerCase()}...`);
+        const retryResult = exec(command, opts);
+        if (opts.capture) process.stdout.write(retryResult);
+        log(color.green, `✅ ${description} complete.`);
+        return retryResult;
+      } catch (loginErr) {
+        log(color.red, '❌ Firebase login failed.');
+        if (loginErr.stdout) process.stdout.write(loginErr.stdout.toString());
+        if (loginErr.stderr) process.stderr.write(loginErr.stderr.toString());
+      }
+    }
+
+    throw err;
   }
 }
 
@@ -52,13 +78,20 @@ process.chdir(rootDir);
 
 log(color.magenta, '\n🚀 Live Setup & Deployment Pipeline');
 
-run('npm run setup:firebase', 'Firebase setup');
-run('npm --prefix dashboard run build', 'Building dashboard with Vite');
-
-const deployOutput = run('firebase deploy --only hosting', 'Deploying to Firebase Hosting', { capture: true });
-const match = deployOutput.match(/https?:\/\/[^\s]+/);
-if (match) {
-  openUrl(match[0]);
+try {
+  runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true });
+  runStep('Building dashboard with Vite', 'npm --prefix dashboard run build');
+  const deployOutput = runStep(
+    'Deploying to Firebase Hosting',
+    'firebase deploy --only hosting',
+    { capture: true, retryAuth: true }
+  );
+  const match = deployOutput.match(/https?:\/\/[^\s]+/);
+  if (match) {
+    openUrl(match[0]);
+  }
+  log(color.green, '\n🎉 Deployment process finished!');
+} catch {
+  log(color.red, '\n🔥 Setup & deployment process terminated due to errors.');
+  process.exit(1);
 }
-
-log(color.green, '\n🎉 Deployment process finished!');
