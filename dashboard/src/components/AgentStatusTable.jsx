@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useOrg } from '../OrgContext';
 
 const statusColors = {
   development: 'bg-blue-100 text-blue-800',
@@ -11,14 +12,19 @@ const statusColors = {
 
 export default function AgentStatusTable() {
   const [agents, setAgents] = useState([]);
+  const { orgId } = useOrg();
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'agent-metadata'), snap => {
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setAgents(data);
-    });
+    if (!orgId) return;
+    const unsub = onSnapshot(
+      collection(db, 'orgs', orgId, 'agent-metadata'),
+      snap => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setAgents(data);
+      }
+    );
     return unsub;
-  }, []);
+  }, [orgId]);
 
   return (
     <div className="p-4 overflow-auto">

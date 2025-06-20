@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useOrg } from '../OrgContext';
 
 export default function ExecutionLogViewer() {
   const [logs, setLogs] = useState([]);
   const [filter, setFilter] = useState('');
+  const { orgId } = useOrg();
 
   useEffect(() => {
-    const q = query(collection(db, 'logs'), orderBy('timestamp', 'desc'));
+    if (!orgId) return;
+    const q = query(collection(db, 'orgs', orgId, 'logs'), orderBy('timestamp', 'desc'));
     const unsub = onSnapshot(q, snap => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setLogs(data);
     });
     return unsub;
-  }, []);
+  }, [orgId]);
 
   const filtered = filter
     ? logs.filter(l => (l.agent || '').includes(filter))
@@ -46,3 +49,4 @@ export default function ExecutionLogViewer() {
     </div>
   );
 }
+

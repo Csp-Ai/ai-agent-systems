@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import { RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
 import { db } from '../firebase';
+import { useOrg } from '../OrgContext';
 
 function relativeTime(date) {
   if (!date) return '-';
@@ -39,10 +40,12 @@ async function notifySlack(agent) {
 export default function AgentHealthDashboard() {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { orgId } = useOrg();
 
   const fetchData = async () => {
+    if (!orgId) return;
     setLoading(true);
-    const snap = await getDocs(collection(db, 'agent-metadata'));
+    const snap = await getDocs(collection(db, 'orgs', orgId, 'agent-metadata'));
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const result = [];
     for (const docSnap of snap.docs) {
@@ -50,7 +53,7 @@ export default function AgentHealthDashboard() {
       let errorCount = 0;
       try {
         const logQ = query(
-          collection(db, 'logs'),
+          collection(db, 'orgs', orgId, 'logs'),
           where('agent', '==', docSnap.id),
           where('timestamp', '>=', since)
         );
@@ -58,7 +61,7 @@ export default function AgentHealthDashboard() {
         errorCount = logSnap.docs.filter(d => d.data().error).length;
 
         const failQ = query(
-          collection(db, 'logs'),
+          collection(db, 'orgs', orgId, 'logs'),
           where('agent', '==', docSnap.id),
           orderBy('timestamp', 'desc'),
           limit(3)
@@ -78,7 +81,7 @@ export default function AgentHealthDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [orgId]);
 
   return (
     <div className="p-4">
@@ -116,3 +119,4 @@ export default function AgentHealthDashboard() {
     </div>
   );
 }
+
