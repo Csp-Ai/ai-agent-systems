@@ -5,7 +5,34 @@ const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
 const { readAuditLogs } = require('./auditLogger');
 
+const HEALTH_FILE = path.join(__dirname, '..', 'logs', 'health-status.json');
+
 const LT_URL = process.env.TRANSLATE_URL || 'https://libretranslate.de';
+
+function ensureHealthFile() {
+  const dir = path.dirname(HEALTH_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (!fs.existsSync(HEALTH_FILE)) {
+    fs.writeFileSync(HEALTH_FILE, '[]', 'utf8');
+  }
+}
+
+function readHealthStatus() {
+  ensureHealthFile();
+  try {
+    return JSON.parse(fs.readFileSync(HEALTH_FILE, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
+function appendHealthStatus(entry) {
+  const data = readHealthStatus();
+  data.push(entry);
+  fs.writeFileSync(HEALTH_FILE, JSON.stringify(data, null, 2));
+}
 
 function createMockInput(inputs = {}) {
   const mock = {};
@@ -36,28 +63,70 @@ function createMockInput(inputs = {}) {
   return mock;
 }
 
+function validateOutput(output, spec = {}) {
+  if (!output || typeof output !== 'object') return false;
+  for (const key of Object.keys(spec || {})) {
+    if (!(key in output)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 async function checkAgent(agentName, meta, agents) {
   const mockInput = createMockInput(meta.inputs);
   const agent = agents[agentName];
   const start = performance.now();
   let success = false;
   let error;
-  try {
-    if (!agent || typeof agent.run !== 'function') {
-      throw new Error('Agent module not found');
+  let attempts = 0;
+  let output;
+
+  while (!success && attempts < 2) {
+    attempts += 1;
+    try {
+      if (!agent || typeof agent.run !== 'function') {
+        throw new Error('Agent module not found');
+      }
+      output = await Promise.resolve(agent.run(mockInput));
+      if (!validateOutput(output, meta.outputs)) {
+        throw new Error('output mismatch');
+      }
+      success = true;
+    } catch (err) {
+      error = err.message;
     }
-    await Promise.resolve(agent.run(mockInput));
-    success = true;
-  } catch (err) {
-    error = err.message;
   }
+
   const latencyMs = Math.round(performance.now() - start);
-  return { agent: agentName, success, latencyMs, error };
+  const auditFailure = hasRecentAuditFailure(agentName);
+  return {
+    agent: agentName,
+    success,
+    latencyMs,
+    attempts,
+    auditFailure,
+    error,
+    timestamp: new Date().toISOString(),
+  };
 }
 
 async function checkTranslation() {
   try {
     const resp = await fetch(`${LT_URL}/languages`);
+    return resp.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function checkStripe() {
+  const key = process.env.STRIPE_KEY;
+  if (!key) return null;
+  try {
+    const resp = await fetch('https://api.stripe.com/v1/charges?limit=1', {
+      headers: { Authorization: `Bearer ${key}` },
+    });
     return resp.ok;
   } catch {
     return false;
@@ -77,6 +146,22 @@ function checkAuditLogs() {
   }
 }
 
+function hasRecentAuditFailure(agentName) {
+  try {
+    const logs = readAuditLogs();
+    if (!Array.isArray(logs)) return false;
+    const recent = logs.slice(-20).reverse();
+    for (const entry of recent) {
+      if (entry.agent === agentName && /error|fail/i.test(entry.resultSummary || '')) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 async function runHealthChecks() {
   const agents = loadAgents();
   const agentResults = [];
@@ -86,9 +171,30 @@ async function runHealthChecks() {
     }
   }
   const translation = await checkTranslation();
+  const stripe = await checkStripe();
   const auditLogRecent = checkAuditLogs();
-  const overall = agentResults.every(r => r.success) && translation && auditLogRecent;
-  return { overall, agents: agentResults, translation, auditLogRecent };
+  const lastAudit = (() => {
+    try {
+      const logs = readAuditLogs();
+      return logs.length ? logs[logs.length - 1] : null;
+    } catch {
+      return null;
+    }
+  })();
+  const overall =
+    agentResults.every(r => r.success && !r.auditFailure) &&
+    translation &&
+    (stripe === null || stripe) &&
+    auditLogRecent;
+  const summary = {
+    overall,
+    agents: agentResults,
+    services: { translation, stripe },
+    auditLogRecent,
+    lastAudit,
+  };
+  appendHealthStatus({ timestamp: new Date().toISOString(), ...summary });
+  return summary;
 }
 
 module.exports = runHealthChecks;
