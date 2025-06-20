@@ -7,13 +7,16 @@
   "license": "Apache-2.0",
   "author": "Csp-Ai",
   "scripts": {
-    "start": "node functions/index.js",
+    "start": "node index.js",
     "test": "echo \"No tests configured yet\" && exit 0",
     "setup:firebase": "node scripts/firebase-setup.js",
     "deploy:dashboard": "node scripts/deploy-dashboard.js",
     "deploy": "node scripts/deploy-to-firebase.js",
     "validate:rules": "node scripts/validate-security-rules.js",
-    "setup:live": "node scripts/setup-and-deploy-live.js"
+    "setup:live": "node scripts/setup-and-deploy-live.js",
+    "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js",
+    "postdeploy:summary": "node scripts/postDeploySummary.js",
+    "postdeploy:all": "node scripts/postDeploySummary.js"
   },
   "keywords": [
     "AI",

@@ -159,6 +159,30 @@
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false
+  },
+  "codex-qa-agent": {
+    "name": "Codex QA Agent",
+    "description": "Verifies Cloud Run deployments by hitting key endpoints and reporting results.",
+    "inputs": {
+      "url": "url",
+      "apiPath": "string",
+      "loginPath": "string"
+    },
+    "outputs": {
+      "success": "boolean",
+      "report": "string",
+      "details": "object"
+    },
+    "category": "Quality Assurance",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": true,
+    "locales": ["en"],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
   }
 }
 
