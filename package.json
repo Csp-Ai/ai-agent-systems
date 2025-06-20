@@ -15,7 +15,9 @@
     "validate:rules": "node scripts/validate-security-rules.js",
     "setup:live": "node scripts/setup-and-deploy-live.js",
     "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js",
-    "postdeploy:summary": "node scripts/postDeploySummary.js"
+    "postdeploy:summary": "node scripts/postDeploySummary.js",
+    "postdeploy:qa": "node scripts/run-codex-qa.js",
+    "postdeploy:all": "npm run postdeploy:cloudrun && npm run postdeploy:qa && npm run postdeploy:summary"
   },
   "keywords": [
     "AI",
