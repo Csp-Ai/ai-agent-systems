@@ -109,3 +109,11 @@ curl -X POST http://localhost:3000/run-agent \
      -H "Content-Type: application/json" \
      -d '{"agent":"website-scanner-agent","input":{"url":"https://example.com"}}'
 ```
+
+## Localization & Translation
+
+Specify a `locale` in the `/run-agent` request body to automatically translate the output of any agent using LibreTranslate. You can also directly call `/translate` or `/detect-language` for ad-hoc usage. Use `/locales` to fetch the list of supported languages.
+
+## Agent Submission
+
+New agents may be submitted via the `/submit-agent` endpoint. Post a zip file containing the agent code and a `metadata` JSON field in the multipart form body. Submissions are staged for manual review.

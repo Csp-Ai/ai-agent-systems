@@ -63,3 +63,9 @@ npm install
 
 # Run development server
 npm start
+
+## 🌐 Localization & Submission Pipeline
+
+The backend includes optional translation utilities powered by **LibreTranslate**. Pass a `locale` when calling `/run-agent` to automatically translate an agent's output. The API also exposes `/translate`, `/detect-language`, and `/locales` helpers for ad-hoc requests.
+
+Developers can submit new agents through `/submit-agent` with metadata and a zip file. Submissions are staged for manual review before integration.
