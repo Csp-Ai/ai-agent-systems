@@ -7,6 +7,7 @@ const multer = require('multer');
 const JSZip = require('jszip');
 const nodemailer = require('nodemailer');
 const PDFDocument = require('pdfkit');
+const { PDFDocument: PDFLibDocument, rgb, StandardFonts } = require('pdf-lib');
 const crypto = require('crypto');
 const loadAgents = require('./loadAgents');
 const agentMetadata = require('../agents/agent-metadata.json');
@@ -18,6 +19,7 @@ const {
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
 const { reportSOP } = require('./sopReporter');
+const { admin } = require('../firebase');
 
 // Load environment variables from .env if present
 dotenv.config();
@@ -228,6 +230,90 @@ function getReportsForEmail(email) {
     }
   }
   return sessions;
+}
+
+async function fetchSessionLogsFromFirestore(sessionId) {
+  try {
+    const ref = admin.firestore().collection('logs').doc(sessionId);
+    const sub = await ref.collection('messages').orderBy('timestamp').get();
+    if (!sub.empty) return sub.docs.map(d => d.data());
+    const doc = await ref.get();
+    const data = doc.exists ? doc.data() : {};
+    return Array.isArray(data.logs) ? data.logs : Array.isArray(data.messages) ? data.messages : [];
+  } catch (err) {
+    console.error('Failed to read Firestore logs', err);
+    return [];
+  }
+}
+
+function groupLogsByStep(logs = []) {
+  const grouped = {};
+  for (const entry of logs) {
+    const step = entry.step || 'General';
+    if (!grouped[step]) grouped[step] = {};
+    const agent = entry.agent || 'unknown';
+    if (!grouped[step][agent]) grouped[step][agent] = [];
+    grouped[step][agent].push(entry);
+  }
+  return grouped;
+}
+
+async function createPdfReport(company, sessionId, logs) {
+  const grouped = groupLogsByStep(logs);
+  const pdfDoc = await PDFLibDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const brand = rgb(0.294, 0.612, 0.886);
+
+  // Cover page
+  let page = pdfDoc.addPage();
+  let { width, height } = page.getSize();
+  page.drawText(company || 'AI Report', {
+    x: 50,
+    y: height - 80,
+    size: 30,
+    font,
+    color: brand,
+  });
+  page.drawText(`Session: ${sessionId}`, { x: 50, y: height - 120, size: 12, font });
+  page.drawText(`Generated: ${new Date().toLocaleDateString()}`, { x: 50, y: height - 140, size: 12, font });
+
+  // Step pages
+  for (const [step, agents] of Object.entries(grouped)) {
+    page = pdfDoc.addPage();
+    ({ width, height } = page.getSize());
+    let y = height - 40;
+    page.drawText(step, { x: 50, y, size: 20, font, color: brand });
+    y -= 30;
+    for (const [agent, entries] of Object.entries(agents)) {
+      page.drawText(agent, { x: 60, y, size: 14, font });
+      y -= 20;
+      for (const entry of entries) {
+        const msg = entry.output ? JSON.stringify(entry.output) : JSON.stringify(entry.input);
+        const text = msg.length > 400 ? msg.slice(0, 397) + '...' : msg;
+        page.drawText(text, { x: 70, y, size: 10, font, maxWidth: width - 80 });
+        y -= 14;
+        if (y < 40) { page = pdfDoc.addPage(); y = page.getHeight() - 40; }
+      }
+      y -= 10;
+    }
+  }
+
+  // Summary page
+  page = pdfDoc.addPage();
+  ({ width, height } = page.getSize());
+  let y = height - 40;
+  page.drawText('Summary', { x: 50, y, size: 20, font, color: brand });
+  y -= 30;
+  const recs = logs
+    .flatMap(l => Array.isArray(l.recommendations) ? l.recommendations : [])
+    .slice(0, 5);
+  recs.forEach((rec, i) => {
+    const text = `${i + 1}. ${rec}`;
+    page.drawText(text, { x: 60, y, size: 12, font, maxWidth: width - 80 });
+    y -= 16;
+  });
+
+  return await pdfDoc.save();
 }
 
 // Append request info to log file
@@ -707,9 +793,29 @@ app.get('/resume/:sessionId', (req, res) => {
   res.json({ status, logs });
 });
 
+// Generate PDF report from Firestore logs
+app.get('/generate-report/:sessionId', async (req, res) => {
+  const { sessionId } = req.params;
+  try {
+    const logs = await fetchSessionLogsFromFirestore(sessionId);
+    if (!logs.length) return res.status(404).json({ error: 'No logs found' });
+    const company = logs[0]?.clientName || 'company';
+    const pdfBuffer = await createPdfReport(company, sessionId, logs);
+    const bucket = admin.storage().bucket();
+    const file = bucket.file(`reports/${sessionId}.pdf`);
+    await file.save(pdfBuffer, { contentType: 'application/pdf' });
+    const [url] = await file.getSignedUrl({ action: 'read', expires: Date.now() + 7 * 24 * 60 * 60 * 1000 });
+    res.json({ url });
+  } catch (err) {
+    console.error('Failed to generate report:', err);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
 // Plugin system - list and register agents
 app.get('/registered-agents', listRegisteredAgents);
 app.post('/register-agent', registerAgent);
+
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {
