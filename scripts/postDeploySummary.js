@@ -1,83 +1,73 @@
 #!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
 const { execSync } = require('child_process');
-const nodemailer = require('nodemailer');
 
-function run(cmd) {
+function readJson(filePath) {
   try {
-    return execSync(cmd, { encoding: 'utf8' }).trim();
-  } catch {
-    return '';
-  }
-}
-
-async function checkApi(url) {
-  if (!url) return false;
-  try {
-    const res = await fetch(url);
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-async function sendSlack(message) {
-  const webhook = process.env.SLACK_DEPLOY_WEBHOOK_URL || process.env.SLACK_WEBHOOK_URL;
-  if (!webhook) return;
-  try {
-    await fetch(webhook, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: message }),
-    });
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
   } catch (err) {
-    console.error('Failed to post Slack message:', err.message);
+    console.error(`Failed to read ${filePath}: ${err.message}`);
+    return null;
   }
 }
 
-async function sendEmail(message) {
-  const emails = (process.env.DEPLOY_NOTIFY_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-  if (!emails.length) return;
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+function writeJson(filePath, data) {
   try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.SMTP_USER,
-      to: emails.join(','),
-      subject: 'Cloud Run Deployment Summary',
-      text: message,
-    });
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.error('Failed to send summary email:', err.message);
+    console.error(`Failed to write ${filePath}: ${err.message}`);
   }
 }
 
-async function main() {
-  const status = process.env.DEPLOY_STATUS || process.argv[2] || 'unknown';
-  const commit = process.env.COMMIT_SHA || run('git rev-parse HEAD');
-  const commitMsg = run('git log -1 --pretty=%B');
-  const changes = run('git diff --name-only HEAD~1..HEAD');
-  const url = process.env.CLOUD_RUN_URL || '';
-  const apiReady = await checkApi(url);
+function getCommitInfo() {
+  try {
+    const commitId = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
+    const timestamp = execSync('git log -1 --format=%cI', { encoding: 'utf8' }).trim();
+    return { commitId, timestamp };
+  } catch (err) {
+    console.error(`Failed to retrieve git info: ${err.message}`);
+    return { commitId: null, timestamp: null };
+  }
+}
 
-  const summary = [
-    `Deployment status: ${status}`,
-    `Commit: ${commit}`,
-    `Message: ${commitMsg.trim()}`,
-    changes ? `Changed files:\n${changes}` : 'Changed files: N/A',
-    `Live URL: ${url || 'N/A'}`,
-    `API ready: ${apiReady ? 'Yes' : 'No'}`,
-  ].join('\n');
+function getAgents(metaPath) {
+  const metadata = readJson(metaPath) || {};
+  return Object.entries(metadata).map(([key, value]) => ({
+    id: key,
+    name: value.name,
+    description: value.description,
+    version: value.version,
+    enabled: value.enabled,
+  }));
+}
 
-  console.log('\n' + summary + '\n');
-  await sendSlack(summary);
-  await sendEmail(summary);
+function main() {
+  const rootDir = path.resolve(__dirname, '..');
+  const summaryPath = path.join(rootDir, 'logs', 'summary.json');
+  const qaPath = path.join(rootDir, 'logs', 'qa', 'codex-qa-agent.json');
+  const deployPath = path.join(rootDir, 'logs', 'postdeploy', 'cloudrun-postdeploy.json');
+  const metaPath = path.join(rootDir, 'agents', 'agent-metadata.json');
+
+  const codexQAResults = readJson(qaPath);
+  const cloudRunPostdeployResults = readJson(deployPath);
+  const agents = getAgents(metaPath);
+  const { commitId, timestamp } = getCommitInfo();
+  const deploymentStatus = cloudRunPostdeployResults?.status ||
+    cloudRunPostdeployResults?.deploymentStatus || null;
+
+  const summary = {
+    commitId,
+    timestamp,
+    deploymentStatus,
+    codexQAResults,
+    cloudRunPostdeployResults,
+    agents,
+  };
+
+  writeJson(summaryPath, summary);
+  console.log(`Summary written to ${summaryPath}`);
 }
 
 main();
