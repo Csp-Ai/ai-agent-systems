@@ -3,6 +3,7 @@ import {
   Globe, Zap, Brain, FileText, CheckCircle, ArrowRight, Users, TrendingUp, Clock, Shield, Star, ChevronDown, Play, Pause, RotateCcw
 } from 'lucide-react';
 import AgentTracker from './AgentTracker';
+import AgentInteractionVisualizer from './AgentInteractionVisualizer';
 
 const LandingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -16,6 +17,8 @@ const LandingPage = () => {
   const [showPricing, setShowPricing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [emailSent, setEmailSent] = useState(false);
+  const [logMessages, setLogMessages] = useState([]);
+  const agentList = ['insights-agent', 'trends-agent', 'anomaly-agent', 'forecast-agent'];
 
   const analysisSteps = [
     { icon: Globe, title: "Website Analysis", description: "Our AI scans your website architecture, content, and user flows" },
@@ -75,6 +78,21 @@ const LandingPage = () => {
     setEmailSent(false);
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
+
+  // Simulate agent collaboration log messages when analyzing
+  useEffect(() => {
+    if (!isAnalyzing) return;
+    const msgs = [
+      '[insights-agent] Sending data to [trends-agent]',
+      '[forecast-agent] requesting anomaly-agent support...'
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      setLogMessages((logs) => [...logs, msgs[i % msgs.length]]);
+      i++;
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isAnalyzing]);
 
   useEffect(() => {
     if (analysisComplete && sessionId && !emailSent) {
@@ -142,11 +160,16 @@ const LandingPage = () => {
                 </>
               )}
               {isAnalyzing && (
-                <AgentTracker
-                  steps={analysisSteps.map(s => s.title)}
-                  currentStep={currentStep}
-                  status={stepStatus}
-                />
+                <div className="relative">
+                  <AgentTracker
+                    steps={analysisSteps.map(s => s.title)}
+                    currentStep={currentStep}
+                    status={stepStatus}
+                  />
+                  <div className="absolute inset-0 flex items-center pointer-events-none">
+                    <AgentInteractionVisualizer agents={agentList} logMessages={logMessages} />
+                  </div>
+                </div>
               )}
               {analysisComplete && emailSent && (
                 <div className="mt-4 flex flex-col items-center">
