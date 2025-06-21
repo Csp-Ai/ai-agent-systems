@@ -1,4 +1,4 @@
-import { StrictMode, useState } from 'react';
+import React, { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AnimatePresence } from 'framer-motion';
 import './index.css';
@@ -9,86 +9,94 @@ import UseCaseSelector from './UseCaseSelector.jsx';
 import WelcomeOverlay from './WelcomeOverlay.jsx';
 import WelcomeExperience from './WelcomeExperience.jsx';
 import OnboardingOverlay from './OnboardingOverlay.jsx';
-import Gallery from './Gallery.jsx'; // <- from your gallery PR
+import Gallery from './Gallery.jsx';
 import AdminDashboard from '../AdminDashboard.jsx';
-import FeedbackFab from './FeedbackFab.jsx'; // <- from your feedback PR
+import FeedbackFab from './FeedbackFab.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 
 const path = window.location.pathname;
 
 function App() {
-  const isDemo = path.startsWith('/demo');
-  const isGallery = path.startsWith('/gallery');
-  const isUseCases = path.startsWith('/use-cases');
-  const isDashboard = path.startsWith('/dashboard');
+  try {
+    const isDemo = path.startsWith('/demo');
+    const isGallery = path.startsWith('/gallery');
+    const isUseCases = path.startsWith('/use-cases');
+    const isDashboard = path.startsWith('/dashboard');
 
-  const [onboarded, setOnboarded] = useState(
-    localStorage.getItem('onboarded') === 'true'
-  );
-  const [experienceSeen, setExperienceSeen] = useState(
-    localStorage.getItem('welcomeExperienceSeen') === 'true'
-  );
-  const [welcomeDismissed, setWelcomeDismissed] = useState(
-    localStorage.getItem('welcomeOverlayDismissed') === 'true'
-  );
+    const [onboarded, setOnboarded] = useState(
+      localStorage.getItem('onboarded') === 'true'
+    );
+    const [experienceSeen, setExperienceSeen] = useState(
+      localStorage.getItem('welcomeExperienceSeen') === 'true'
+    );
+    const [welcomeDismissed, setWelcomeDismissed] = useState(
+      localStorage.getItem('welcomeOverlayDismissed') === 'true'
+    );
 
-  const markOnboarded = () => {
-    localStorage.setItem('onboarded', 'true');
-    setOnboarded(true);
-  };
+    const markOnboarded = () => {
+      localStorage.setItem('onboarded', 'true');
+      setOnboarded(true);
+    };
 
-  const finishExperience = () => {
-    localStorage.setItem('welcomeExperienceSeen', 'true');
-    setExperienceSeen(true);
-  };
+    const finishExperience = () => {
+      localStorage.setItem('welcomeExperienceSeen', 'true');
+      setExperienceSeen(true);
+    };
 
-  const dismissWelcome = () => {
-    localStorage.setItem('welcomeOverlayDismissed', 'true');
-    setWelcomeDismissed(true);
-  };
+    const dismissWelcome = () => {
+      localStorage.setItem('welcomeOverlayDismissed', 'true');
+      setWelcomeDismissed(true);
+    };
 
-  let content;
-  if (isDemo) {
-    content = <DemoPage />;
-  } else if (isGallery) {
-    content = <Gallery />; // <-- your public preview gallery here
-  } else if (isUseCases) {
-    content = <UseCaseSelector />;
-  } else if (isDashboard) {
-    content = <AdminDashboard />;
-  } else {
-    content = (
+    let content;
+    if (isDemo) {
+      content = <DemoPage />;
+    } else if (isGallery) {
+      content = <Gallery />;
+    } else if (isUseCases) {
+      content = <UseCaseSelector />;
+    } else if (isDashboard) {
+      content = <AdminDashboard />;
+    } else {
+      content = (
+        <>
+          <LandingPage />
+          <DevToolsPanel />
+        </>
+      );
+    }
+
+    console.log({ isGallery, isDemo, isUseCases, content });
+
+    if (!content) {
+      content = <LandingPage />;
+    }
+
+    return (
       <>
-        <LandingPage />
-        <DevToolsPanel />
+        {content}
+        <FeedbackFab />
+        <AnimatePresence>
+          {!onboarded && <OnboardingOverlay onComplete={markOnboarded} />}
+          {onboarded && !experienceSeen && (
+            <WelcomeExperience onFinish={finishExperience} />
+          )}
+          {onboarded && experienceSeen && !welcomeDismissed && (
+            <WelcomeOverlay onDismiss={dismissWelcome} />
+          )}
+        </AnimatePresence>
       </>
     );
+  } catch (err) {
+    console.error('App crashed:', err);
+    return <LandingPage />;
   }
-
-  return (
-    <>
-return (
-  <>
-    {content}
-    <FeedbackFab />
-    <AnimatePresence>
-      {!onboarded && <OnboardingOverlay onComplete={markOnboarded} />}
-      {onboarded && !experienceSeen && (
-        <WelcomeExperience onFinish={finishExperience} />
-      )}
-      {onboarded && experienceSeen && !welcomeDismissed && (
-        <WelcomeOverlay onDismiss={dismissWelcome} />
-      )}
-    </AnimatePresence>
-  </>
-);
-
-    </>
-  );
 }
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 );
-
