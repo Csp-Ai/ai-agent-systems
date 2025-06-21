@@ -2,13 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import NeuralAgentMap from '../components/NeuralAgentMap.jsx';
 import StatusCard from '../components/StatusCard.jsx';
-import React, { useEffect, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import NeuralAgentMap from '../components/NeuralAgentMap.jsx';
-import StatusCard from '../components/StatusCard.jsx';
 import RealTimeLogConsole from '../components/RealTimeLogConsole.jsx';
 import AgentSidebar from '../components/AgentSidebar.jsx';
-import { useTheme } from '../context/ThemeContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
 export default function Dashboard() {
