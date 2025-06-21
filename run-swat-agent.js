@@ -24,12 +24,22 @@ require('dotenv').config();
 (async () => {
   try {
     const { run } = await import('./core/agent-runner.js');
-    const vercelConfig = require('./vercel.json');
-    const result = await run('vercel-swat-agent', {
-      sessionId: 'dev-session',
-      registeredAgents: [],
-      vercelConfig,
-    });
+    const vercelConfig = JSON.parse(fs.readFileSync('./vercel.json', 'utf8'));
+
+    const args = process.argv.slice(2);
+    let sessionId = process.env.SESSION_ID || 'dev-session';
+    const envOverrides = {};
+    for (const arg of args) {
+      if (arg.startsWith('--session=')) {
+        sessionId = arg.slice('--session='.length);
+      } else if (arg.startsWith('--env=')) {
+        const pair = arg.slice('--env='.length);
+        const [key, value] = pair.split('=');
+        envOverrides[key] = value;
+      }
+    }
+
+    const result = await run({ sessionId, registeredAgents: [], vercelConfig, envOverrides });
     console.log(JSON.stringify(result, null, 2));
     console.log('✅ Vercel SWAT Agent completed successfully');
   } catch (err) {
