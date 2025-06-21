@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import FeedbackFab from './components/FeedbackFab.jsx';
 import { OrgProvider, useOrg } from './OrgContext';
 import AgentStatusTable from './components/AgentStatusTable';
 import MisalignmentProposalsPanel from './components/MisalignmentProposalsPanel';
@@ -74,6 +75,7 @@ function Shell() {
           </Routes>
         </main>
       </div>
+      <FeedbackFab />
     </Router>
   );
 }

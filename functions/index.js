@@ -192,6 +192,10 @@ if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
 }
 
+if (!fs.existsSync(FEEDBACK_DIR)) {
+  fs.mkdirSync(FEEDBACK_DIR, { recursive: true });
+}
+
 if (!fs.existsSync(SIM_ACTIONS_DIR)) {
   fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
 }
@@ -315,6 +319,13 @@ function saveSimulationLog(orgId, timestamp, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
+function saveFeedback(page, agent, data) {
+  const dir = path.join(FEEDBACK_DIR, page || 'unknown', agent || 'general');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${Date.now()}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
 function saveDemoSession(data) {
   ensureDemoSessionDir();
   const file = path.join(DEMO_SESSION_DIR, `${Date.now()}.json`);
@@ -334,9 +345,10 @@ function writeJson(file, data) {
 }
 
 function appendFeedback(entry) {
-  const list = readJson(FEEDBACK_FILE, []);
+  const file = path.join(FEEDBACK_DIR, `${entry.type || 'general'}.json`);
+  const list = readJson(file, []);
   list.push(entry);
-  writeJson(FEEDBACK_FILE, list);
+  writeJson(file, list);
 }
 
 function appendWelcomeLog(entry) {
@@ -379,8 +391,6 @@ function saveNextSteps(id, data) {
 
 function readNextSteps(id) {
   return readJson(path.join(NEXT_STEPS_DIR, `${id}.json`), {});
-}
-
 }
 
 
@@ -1127,6 +1137,25 @@ app.post('/logs/simulations', async (req, res) => {
   }
 });
 
+// Feedback submission via authenticated route
+app.post('/submit-feedback', async (req, res) => {
+  const uid = await verifyUser(req);
+  const { page = 'unknown', agent = 'general', rating = '', text = '' } = req.body || {};
+  try {
+    saveFeedback(page.replace(/\//g, '_'), agent, {
+      uid: uid || null,
+      persona: null,
+      page,
+      agent,
+      rating,
+      text,
+    });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed to save feedback' });
+  }
+});
+
 app.post('/logs/simulation-actions/:id', (req, res) => {
   const { id } = req.params;
   const { action } = req.body || {};
@@ -1157,12 +1186,6 @@ app.post('/logs/demo-sessions', (req, res) => {
   }
 });
 
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ error: 'failed to save' });
-  }
-});
-
 // General logs
 app.get('/logs', (_req, res) => {
   res.json(readLogs());
@@ -1181,7 +1204,7 @@ app.post('/welcome-log', (req, res) => {
   res.json({ success: true });
 });
 
-// Feedback submission
+// Anonymous feedback (non-authenticated fallback)
 app.post('/feedback', (req, res) => {
   const { type = 'general', message = '', sessionId = '' } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message required' });
@@ -1226,7 +1249,10 @@ app.post('/next-steps/:id', (req, res) => {
 // Generate share token for a URL
 app.post('/share', (req, res) => {
   const { url } = req.body || {};
-  if (!url) return res.status(400).json({ error:
+  if (!url) return res.status(400).json({ error: 'url required' });
+  const token = Buffer.from(url).toString('base64');
+  res.json({ token, shareUrl: `/share/${encodeURIComponent(token)}` });
+});
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {

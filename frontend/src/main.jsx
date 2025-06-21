@@ -9,8 +9,9 @@ import UseCaseSelector from './UseCaseSelector.jsx';
 import WelcomeOverlay from './WelcomeOverlay.jsx';
 import WelcomeExperience from './WelcomeExperience.jsx';
 import OnboardingOverlay from './OnboardingOverlay.jsx';
-import Gallery from './Gallery.jsx'; // <- from your branch
+import Gallery from './Gallery.jsx'; // <- from your gallery PR
 import AdminDashboard from '../AdminDashboard.jsx';
+import FeedbackFab from './FeedbackFab.jsx'; // <- from your feedback PR
 
 const path = window.location.pathname;
 
@@ -65,16 +66,22 @@ function App() {
 
   return (
     <>
-      {content}
-      <AnimatePresence>
-        {!onboarded && <OnboardingOverlay onComplete={markOnboarded} />}
-        {onboarded && !experienceSeen && (
-          <WelcomeExperience onFinish={finishExperience} />
-        )}
-        {onboarded && experienceSeen && !welcomeDismissed && (
-          <WelcomeOverlay onDismiss={dismissWelcome} />
-        )}
-      </AnimatePresence>
+return (
+  <>
+    {content}
+    <FeedbackFab />
+    <AnimatePresence>
+      {!onboarded && <OnboardingOverlay onComplete={markOnboarded} />}
+      {onboarded && !experienceSeen && (
+        <WelcomeExperience onFinish={finishExperience} />
+      )}
+      {onboarded && experienceSeen && !welcomeDismissed && (
+        <WelcomeOverlay onDismiss={dismissWelcome} />
+      )}
+    </AnimatePresence>
+  </>
+);
+
     </>
   );
 }
