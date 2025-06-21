@@ -53,7 +53,8 @@ export default function FeedbackFab({ agent }) {
           title="Give Feedback"
           className="fixed bottom-6 right-6 bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg z-40"
         >
-          {"\u{1F4AC}"}
+          {/* Chat bubble emoji */}
+          {String.fromCodePoint(0x1F4AC)}
         </button>
       )}
       {open && (
