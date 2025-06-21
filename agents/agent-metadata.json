@@ -113,7 +113,11 @@
     ],
     "lifecycle": "incubation",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "accessRoles": [
+      "admin",
+      "analyst"
+    ]
   },
   "mentor-agent": {
     "name": "Mentor Agent",
@@ -162,7 +166,10 @@
     ],
     "lifecycle": "production",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "accessRoles": [
+      "admin"
+    ]
   },
   "guardian-agent": {
     "name": "Guardian Agent",
@@ -186,7 +193,10 @@
     ],
     "lifecycle": "production",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "accessRoles": [
+      "admin"
+    ]
   },
   "codex-qa-agent": {
     "name": "Codex QA Agent",
