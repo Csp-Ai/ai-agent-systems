@@ -19,6 +19,7 @@ const {
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
 const { reportSOP } = require('./sopReporter');
+const { recordRun, scheduleWeeklySummary } = require('../utils/agentHealthTracker');
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
 
@@ -71,6 +72,7 @@ function isAuthorized(req) {
 }
 
 const app = express();
+scheduleWeeklySummary();
 app.use(cors());
 app.use(express.json());
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -403,6 +405,8 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
     });
     logAgentAction({ sessionId, agent: agentName, input, result });
 
+    recordRun(agentName, true, Date.now() - startTime);
+
     results[agentName] = result;
     stack.pop();
     await reportSOP(agentName, {
@@ -433,6 +437,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
     });
     logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
     stack.pop();
+    recordRun(agentName, false, Date.now() - startTime);
     await reportSOP(agentName, {
       goal: metadata.description || '',
       steps: [{ name: 'run', durationMs: Date.now() - startTime }],
