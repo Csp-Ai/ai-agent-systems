@@ -30,7 +30,7 @@
     "decision-support"
   ],
   "dependencies": {
-    "chalk": "^5.4.1",
+    "chalk": "^4.1.2",
     "cheerio": "^1.1.0",
     "clipboardy": "^4.0.0",
     "cors": "^2.8.5",
