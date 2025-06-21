@@ -172,6 +172,7 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const FEEDBACK_DIR = path.join(LOG_DIR, 'feedback');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -180,6 +181,10 @@ if (!fs.existsSync(REPORTS_DIR)) {
 
 if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(FEEDBACK_DIR)) {
+  fs.mkdirSync(FEEDBACK_DIR, { recursive: true });
 }
 
 // Ensure log directory and file exist
@@ -286,6 +291,13 @@ function saveSimulationLog(orgId, timestamp, data) {
     fs.mkdirSync(dir, { recursive: true });
   }
   const file = path.join(dir, `${timestamp}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function saveFeedback(page, agent, data) {
+  const dir = path.join(FEEDBACK_DIR, page || 'unknown', agent || 'general');
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${Date.now()}.json`);
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
@@ -969,6 +981,24 @@ app.post('/logs/simulations', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'failed to save' });
+  }
+});
+
+app.post('/submit-feedback', async (req, res) => {
+  const uid = await verifyUser(req);
+  const { page = 'unknown', agent = 'general', rating = '', text = '' } = req.body || {};
+  try {
+    saveFeedback(page.replace(/\//g, '_'), agent, {
+      uid: uid || null,
+      persona: null,
+      page,
+      agent,
+      rating,
+      text,
+    });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed to save feedback' });
   }
 });
 
