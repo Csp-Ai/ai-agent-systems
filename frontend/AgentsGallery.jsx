@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import OutputToolbar from "./OutputToolbar.jsx";
 
 export default function AgentsGallery() {
   const [agents, setAgents] = useState([]);
@@ -142,9 +143,12 @@ export default function AgentsGallery() {
             </button>
           </div>
           {output && (
-            <div className="mt-6 bg-black/30 p-4 rounded-lg text-sm text-green-300 whitespace-pre-wrap">
-              {typeof output === "string" ? output : JSON.stringify(output, null, 2)}
-            </div>
+            <>
+              <div className="mt-6 bg-black/30 p-4 rounded-lg text-sm text-green-300 whitespace-pre-wrap">
+                {typeof output === "string" ? output : JSON.stringify(output, null, 2)}
+              </div>
+              <OutputToolbar content={typeof output === 'string' ? output : JSON.stringify(output, null, 2)} />
+            </>
           )}
         </div>
       )}

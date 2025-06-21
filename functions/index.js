@@ -172,6 +172,7 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const SHARED_OUTPUT_DIR = path.join(LOG_DIR, 'shared');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -180,6 +181,10 @@ if (!fs.existsSync(REPORTS_DIR)) {
 
 if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(SHARED_OUTPUT_DIR)) {
+  fs.mkdirSync(SHARED_OUTPUT_DIR, { recursive: true });
 }
 
 // Ensure log directory and file exist
@@ -458,6 +463,7 @@ app.use('/board', express.static(path.join(__dirname, '..', 'frontend', 'board')
 
 // Serve generated PDF reports from logs/reports
 app.use('/reports', express.static('logs/reports'));
+app.use('/shared', express.static('logs/shared'));
 
 app.get('/logs/sessions', (req, res) => {
   if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
@@ -487,6 +493,22 @@ app.get('/logs/sessions/:id', (req, res) => {
   const file = path.join(SESSION_LOG_DIR, `${req.params.id}.json`);
   if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
   res.download(file);
+});
+
+app.post('/share-output/:sessionId', async (req, res) => {
+  const uid = await verifyUser(req);
+  const orgId = getOrgId(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+  const file = path.join(SESSION_LOG_DIR, `${req.params.sessionId}.json`);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'not_found' });
+  try {
+    const token = crypto.randomBytes(8).toString('hex');
+    fs.copyFileSync(file, path.join(SHARED_OUTPUT_DIR, `${token}.json`));
+    res.json({ url: `/shared-output/${token}` });
+  } catch {
+    res.status(500).json({ error: 'failed' });
+  }
 });
 
 const STAGING_DIR = path.join(__dirname, '..', 'agents', 'staging');
@@ -844,6 +866,29 @@ app.get('/viewer', (req, res) => {
     <script>window.reportUrl = ${JSON.stringify(file)};</script>
     <script type="text/babel" src="/client/PublicViewer.jsx"></script>
     <script type="text/babel">ReactDOM.render(<PublicViewer url={window.reportUrl} />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
+});
+
+app.get('/shared-output/:token', (req, res) => {
+  const file = `/shared/${req.params.token}.json`;
+  if (!fs.existsSync(path.join(__dirname, '..', file))) return res.status(404).send('Not found');
+
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Shared Output</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-900">
+    <div id="root"></div>
+    <script>window.outputFile = ${JSON.stringify(file)};</script>
+    <script type="text/babel" src="/client/OutputViewer.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<OutputViewer file={window.outputFile} />, document.getElementById('root'));</script>
   </body>
   </html>`);
 });

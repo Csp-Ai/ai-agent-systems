@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AgentTracker from './AgentTracker.jsx';
+import OutputToolbar from '../OutputToolbar.jsx';
 
 const flows = {
   sales: ['leads-agent', 'outreach-agent', 'followup-agent', 'dealtracker-agent'],
@@ -93,9 +94,12 @@ export default function DepartmentSimulators() {
       </div>
       {agents.length > 0 && <AgentTracker steps={agents} status={status} />}
       {log.length > 0 && (
-        <pre className="bg-black/60 p-3 rounded-lg text-green-400 font-mono text-xs whitespace-pre-wrap">
-          {JSON.stringify({ agents, log }, null, 2)}
-        </pre>
+        <>
+          <pre className="bg-black/60 p-3 rounded-lg text-green-400 font-mono text-xs whitespace-pre-wrap">
+            {JSON.stringify({ agents, log }, null, 2)}
+          </pre>
+          <OutputToolbar content={JSON.stringify({ agents, log }, null, 2)} />
+        </>
       )}
     </div>
   );
