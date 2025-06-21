@@ -292,9 +292,19 @@
   }
   , "vercel-swat-agent": {
     "name": "Vercel SWAT Agent",
-    "description": "Diagnoses and resolves silent failure states in the frontend and backend integration.",
-    "inputs": { "sessionId": "string" },
-    "outputs": {},
+    "description": "Diagnoses Vercel production issues, handles analytics and package fetch fallbacks, and reboots the pipeline cleanly.",
+    "inputs": {
+      "sessionId": "string",
+      "registeredAgents": "array",
+      "logSnapshot": "object",
+      "vercel.json": "object"
+    },
+    "outputs": {
+      "diagnosticReport": "array",
+      "autoFixSummary": "array",
+      "fallbackTriggerLog": "array"
+    },
+    "dependencies": ["firebase-admin", "node-fetch", "chalk"],
     "category": "DevOps",
     "enabled": true,
     "version": "1.0.0",
