@@ -1,10 +1,16 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://your-cloud-run-api-url.com/api/:path*" },
-    { "source": "/:path*", "destination": "/index.html" }
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "build" }
+    }
   ],
-  "env": {
-    "REACT_APP_API_BASE": "https://your-cloud-run-api-url.com"
-  }
+  "routes": [
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "rewrites": [
+    { "source": "/:path*", "destination": "/index.html" }
+  ]
 }
