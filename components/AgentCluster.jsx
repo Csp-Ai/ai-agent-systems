@@ -3,7 +3,30 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const randomRange = (min, max) => Math.random() * (max - min) + min;
 
-const AgentCluster = ({ agents = [], logEvents = [] }) => {
+const defaultAvatars = [
+  {
+    icon: '🧠',
+    name: 'trends-agent',
+    color: '#6366f1'
+  },
+  {
+    icon: '📦',
+    name: 'swat-agent',
+    color: '#10b981'
+  },
+  {
+    icon: '🧪',
+    name: 'insights-agent',
+    color: '#f59e0b'
+  },
+  {
+    icon: '📈',
+    name: 'forecast-agent',
+    color: '#ef4444'
+  }
+];
+
+const AgentCluster = ({ agents = defaultAvatars, logEvents = [] }) => {
   const radius = 70;
   const positions = useMemo(
     () =>
@@ -15,30 +38,40 @@ const AgentCluster = ({ agents = [], logEvents = [] }) => {
   );
 
   return (
-    <div className="relative w-64 h-64 rounded-lg bg-white/10 backdrop-blur p-6">
+    <div className="relative w-64 h-64 sm:w-80 sm:h-80 rounded-lg bg-white/10 dark:bg-black/20 backdrop-blur p-4 shadow-xl">
+      {/* Floating agents */}
       {positions.map((pos, idx) => {
         const agent = agents[idx];
         const floatX = randomRange(-10, 10);
         const floatY = randomRange(-10, 10);
         const dur = randomRange(4, 8);
+
         return (
           <motion.div
             key={agent.name}
             title={`${agent.icon} ${agent.name}`}
-            className="absolute flex items-center justify-center w-10 h-10 rounded-full text-xl shadow"
+            className="absolute flex items-center justify-center w-10 h-10 rounded-full text-xl text-white shadow-md"
             style={{
               left: `calc(50% + ${pos.x}px)`,
               top: `calc(50% + ${pos.y}px)`,
-              backgroundColor: agent.color,
-              color: '#fff'
+              backgroundColor: agent.color
             }}
-            animate={{ x: [0, floatX, -floatX, 0], y: [0, floatY, -floatY, 0] }}
-            transition={{ duration: dur, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{
+              x: [0, floatX, -floatX, 0],
+              y: [0, floatY, -floatY, 0]
+            }}
+            transition={{
+              duration: dur,
+              repeat: Infinity,
+              ease: 'easeInOut'
+            }}
           >
             {agent.icon}
           </motion.div>
         );
       })}
+
+      {/* Animated links */}
       <motion.svg
         className="absolute inset-0 w-full h-full pointer-events-none"
         stroke="currentColor"
@@ -61,8 +94,10 @@ const AgentCluster = ({ agents = [], logEvents = [] }) => {
           );
         })}
       </motion.svg>
+
+      {/* Log overlay */}
       {logEvents.length > 0 && (
-        <div className="absolute bottom-2 left-2 space-y-1 text-xs">
+        <div className="absolute bottom-2 left-2 space-y-1 text-xs z-10">
           <AnimatePresence>
             {logEvents.slice(-3).map((log, idx) => (
               <motion.div
@@ -83,3 +118,4 @@ const AgentCluster = ({ agents = [], logEvents = [] }) => {
 };
 
 export default AgentCluster;
+
