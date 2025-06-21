@@ -171,10 +171,15 @@ const LOG_FILE = path.join(LOG_DIR, 'logs.json');
 const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
+const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
   fs.mkdirSync(REPORTS_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(SIMULATION_DIR)) {
+  fs.mkdirSync(SIMULATION_DIR, { recursive: true });
 }
 
 // Ensure log directory and file exist
@@ -227,6 +232,12 @@ function ensureSessionFiles() {
   }
 }
 
+function ensureSimulationDir() {
+  if (!fs.existsSync(SIMULATION_DIR)) {
+    fs.mkdirSync(SIMULATION_DIR, { recursive: true });
+  }
+}
+
 function readSessionStatus() {
   ensureSessionFiles();
   try {
@@ -266,6 +277,16 @@ function saveSessionLog(sessionId, data) {
   }
   logs.push(data);
   fs.writeFileSync(file, JSON.stringify(logs, null, 2));
+}
+
+function saveSimulationLog(orgId, timestamp, data) {
+  ensureSimulationDir();
+  const dir = path.join(SIMULATION_DIR, orgId || 'default');
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  const file = path.join(dir, `${timestamp}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 
@@ -931,6 +952,23 @@ app.post('/add-agent', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/logs/simulations', async (req, res) => {
+  const uid = await verifyUser(req);
+  const orgId = getOrgId(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
+  const { timestamp, agents = [], log = [] } = req.body || {};
+  if (!timestamp || !Array.isArray(agents) || !Array.isArray(log)) {
+    return res.status(400).json({ error: 'invalid payload' });
+  }
+  try {
+    saveSimulationLog(orgId || 'default', timestamp, { agents, log });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'failed to save' });
   }
 });
 
