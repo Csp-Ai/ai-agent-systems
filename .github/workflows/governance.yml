@@ -14,5 +14,14 @@ jobs:
         with:
           node-version: 18
       - run: npm ci
+      - name: Stub Firebase env vars
+        run: |
+          echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:-dummy}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:-dummy}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-dummy}" >> $GITHUB_ENV
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
       - run: node agents/guardian-agent.js
       - run: node agents/board-agent.js
