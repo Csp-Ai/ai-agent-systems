@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [agents, setAgents] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
   const [logs, setLogs] = useState({});
+  const [decisionLogs, setDecisionLogs] = useState([]);
 
   useEffect(() => {
     fetch('/agents/agent-metadata.json')
@@ -36,6 +37,13 @@ export default function Dashboard() {
       setLogs(grouped);
     });
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    fetch('/logs/agent-decisions')
+      .then(r => r.json())
+      .then(data => setDecisionLogs(Array.isArray(data) ? data : []))
+      .catch(() => setDecisionLogs([]));
   }, []);
 
   const agentStates = agents.map(a => {
@@ -76,7 +84,7 @@ export default function Dashboard() {
                 ? '#ef4444'
                 : '#9ca3af'
           }))}
-          logEvents={[]}
+          logEvents={decisionLogs.map(d => `${d.agent} - ${d.action} (${d.context})`)}
         />
         <RealTimeLogConsole className="h-64" />
       </div>

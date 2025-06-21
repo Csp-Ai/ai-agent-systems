@@ -187,6 +187,7 @@ const ANALYTICS_FILE = path.join(LOG_DIR, 'analytics.json');
 const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
 const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
 const DASHBOARD_LOG_FILE = path.join(LOG_DIR, 'dashboard.json');
+const AGENT_DECISIONS_FILE = path.join(LOG_DIR, 'agent-decisions.json');
 
 
 // Ensure reports directory exists so generated PDFs can be served
@@ -430,6 +431,16 @@ function appendDashboardLog(entry) {
   const list = readJson(DASHBOARD_LOG_FILE, []);
   list.push(entry);
   writeJson(DASHBOARD_LOG_FILE, list);
+}
+
+function appendAgentDecision(entry) {
+  const list = readJson(AGENT_DECISIONS_FILE, []);
+  list.push(entry);
+  writeJson(AGENT_DECISIONS_FILE, list);
+}
+
+function readAgentDecisions() {
+  return readJson(AGENT_DECISIONS_FILE, []);
 }
 
 function readAnalytics() {
@@ -1409,6 +1420,18 @@ app.post('/dashboard-log', (req, res) => {
   const { event = '', data = {} } = req.body || {};
   if (!event) return res.status(400).json({ error: 'event required' });
   appendDashboardLog({ id: uuidv4(), event, data, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Agent decision logs
+app.get('/logs/agent-decisions', (_req, res) => {
+  res.json(readAgentDecisions());
+});
+
+app.post('/logs/agent-decisions', (req, res) => {
+  const { agent = '', context = '', action = '' } = req.body || {};
+  if (!agent || !action) return res.status(400).json({ error: 'agent and action required' });
+  appendAgentDecision({ agent, context, action, timestamp: new Date().toISOString() });
   res.json({ success: true });
 });
 
