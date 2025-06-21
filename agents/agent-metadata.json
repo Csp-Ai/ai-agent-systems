@@ -290,4 +290,20 @@
     "locale": "en-US",
     "misaligned": false
   }
+  , "vercel-swat-agent": {
+    "name": "Vercel SWAT Agent",
+    "description": "Diagnoses and resolves silent failure states in the frontend and backend integration.",
+    "inputs": { "sessionId": "string" },
+    "outputs": {},
+    "category": "DevOps",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": ["en"],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
+  }
 }
