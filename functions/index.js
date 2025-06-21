@@ -213,6 +213,14 @@ if (!fs.existsSync(NEXT_STEPS_DIR)) {
   fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
 }
 
+if (!fs.existsSync(ANALYTICS_AGENT_DIR)) {
+  fs.mkdirSync(ANALYTICS_AGENT_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(ANALYTICS_PAGE_DIR)) {
+  fs.mkdirSync(ANALYTICS_PAGE_DIR, { recursive: true });
+}
+
 
 // Ensure log directory and file exist
 function ensureLogFile() {
