@@ -2,8 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import NeuralAgentMap from '../components/NeuralAgentMap.jsx';
 import StatusCard from '../components/StatusCard.jsx';
+import React, { useEffect, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import NeuralAgentMap from '../components/NeuralAgentMap.jsx';
+import StatusCard from '../components/StatusCard.jsx';
 import RealTimeLogConsole from '../components/RealTimeLogConsole.jsx';
 import AgentSidebar from '../components/AgentSidebar.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
 export default function Dashboard() {
@@ -68,9 +73,22 @@ export default function Dashboard() {
             ))}
           </AnimatePresence>
         </div>
-        <div className="h-[500px]">
-          <NeuralAgentMap agents={agents} logEvents={logEvents} />
-        </div>
+<div className="h-[500px]">
+  <NeuralAgentMap
+    agents={agentStates.map(a => ({
+      name: a.id,
+      icon: '🤖',
+      color:
+        a.status === 'running'
+          ? '#10b981'
+          : a.status === 'error'
+          ? '#ef4444'
+          : '#9ca3af'
+    }))}
+    logEvents={logEvents}
+  />
+</div>
+<RealTimeLogConsole className="h-64" />
       </div>
     </div>
   );
