@@ -5,6 +5,18 @@ const { execSync } = require('child_process');
 const admin = require('firebase-admin');
 const chalk = require('chalk');
 
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault()
+    });
+  } catch {
+    console.error(chalk.redBright("\uD83D\uDD25 Firebase config missing. Skipping initialization."));
+  }
+}
+
+const db = admin.apps.length ? admin.firestore() : null;
+
 const LOG_DIR = path.join(__dirname, '..', 'logs');
 const LOG_FILE = path.join(LOG_DIR, 'logs.json');
 
@@ -44,7 +56,7 @@ async function checkEndpoint(url, timeoutMs = 5000) {
 
 module.exports = {
   run: async ({ sessionId = '', registeredAgents = [] } = {}) => {
-    const firestore = admin.firestore();
+    const firestore = db;
     const diagnosticReport = [];
     const autoFixSummary = [];
     const fallbackTriggerLog = [];
