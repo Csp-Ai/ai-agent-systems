@@ -1,8 +1,29 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import AgentCard from '../components/AgentCard';
+import LiveAgentGraph from '../components/LiveAgentGraph';
 import AgentCluster from '../components/AgentCluster';
 import PricingTiers from '../components/PricingTiers';
 import { useTheme } from '../context/ThemeContext';
+import TourOverlay from '../components/TourOverlay';
+
+const pricing = [
+  { title: 'Basic', price: 'Free', features: ['1 agent', 'Community support'] },
+  { title: 'Pro', price: '$49/mo', features: ['Up to 5 agents', 'Email support'] },
+  { title: 'Enterprise', price: 'Contact us', features: ['Unlimited agents', 'Dedicated support'] }
+];
+
+const testimonials = [
+  { quote: 'These agents saved us countless hours!', author: 'Alex P.' },
+  { quote: 'Insightful analytics and easy to use.', author: 'Jamie L.' },
+  { quote: 'A must-have for automation projects.', author: 'Morgan K.' }
+];
+
+const heroAgents = [
+  { name: 'insights-agent', icon: '🧠', color: '#8b5cf6' },
+  { name: 'swat-agent', icon: '⚙️', color: '#0ea5e9' },
+  { name: 'data-agent', icon: '📊', color: '#10b981' }
+];
 
 const Welcome = () => {
   const { theme, toggleTheme } = useTheme();
@@ -24,7 +45,8 @@ const Welcome = () => {
           Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode
         </button>
       </header>
-      <main className="max-w-screen-xl mx-auto grid md:grid-cols-2 gap-8 items-center px-6">
+<main className="py-20 px-4 space-y-20">
+
         <div className="space-y-6">
           <h1 className="text-4xl md:text-5xl font-extrabold">Welcome to the Agent Platform</h1>
           <p className="opacity-80">Deploy smart agents that automate your workflows in minutes.</p>
