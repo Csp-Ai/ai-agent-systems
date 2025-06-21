@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import AgentCard from '../components/AgentCard';
 import LiveAgentGraph from '../components/LiveAgentGraph';
+import AgentCluster from '../components/AgentCluster';
 import { useTheme } from '../components/ThemeContext';
 import TourOverlay from '../components/TourOverlay';
 
@@ -15,6 +16,12 @@ const testimonials = [
   { quote: 'These agents saved us countless hours!', author: 'Alex P.' },
   { quote: 'Insightful analytics and easy to use.', author: 'Jamie L.' },
   { quote: 'A must-have for automation projects.', author: 'Morgan K.' }
+];
+
+const heroAgents = [
+  { name: 'insights-agent', icon: '🧠', color: '#8b5cf6' },
+  { name: 'swat-agent', icon: '⚙️', color: '#0ea5e9' },
+  { name: 'data-agent', icon: '📊', color: '#10b981' }
 ];
 
 const Welcome = () => {
@@ -39,17 +46,30 @@ const Welcome = () => {
           Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode
         </button>
       </header>
-      <section className="text-center py-20 px-4">
-        <h2 className="text-4xl font-extrabold mb-4">Deploy Trusted Agents Fast</h2>
-        <p className="max-w-xl mx-auto mb-8 opacity-80">Automate operations and gain real-time insights with our plug-and-play agent framework.</p>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setTourStep(0)}
-          className="bg-blue-600 text-white py-3 px-6 rounded-lg shadow"
-        >
-          Try Agents Now
-        </motion.button>
+      <section className="py-20 px-4">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+          <div className="text-center md:text-left">
+            <h2 className="text-4xl font-extrabold mb-4">Deploy Trusted Agents Fast</h2>
+            <p className="max-w-xl md:mx-0 mx-auto mb-8 opacity-80">Automate operations and gain real-time insights with our plug-and-play agent framework.</p>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTourStep(0)}
+              className="bg-blue-600 text-white py-3 px-6 rounded-lg shadow"
+            >
+              Try Agents Now
+            </motion.button>
+          </div>
+          <div className="flex justify-center md:justify-end">
+            <AgentCluster
+              agents={heroAgents}
+              logEvents={[
+                '🧠 insights-agent analyzing data',
+                '⚙️ swat-agent deploying fix'
+              ]}
+            />
+          </div>
+        </div>
       </section>
 
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-4">
