@@ -10,7 +10,7 @@ import WelcomeOverlay from './WelcomeOverlay.jsx';
 import WelcomeExperience from './WelcomeExperience.jsx';
 import OnboardingOverlay from './OnboardingOverlay.jsx';
 import Gallery from './Gallery.jsx';
-import Dashboard from '../pages/Dashboard.jsx';
+import Dashboard from '../../pages/Dashboard.jsx';
 import FeedbackFab from './FeedbackFab.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 
