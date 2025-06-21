@@ -18,7 +18,8 @@
     "postdeploy:summary": "node scripts/postDeploySummary.js",
     "postdeploy:all": "node scripts/postDeploySummary.js",
     "process-log": "node agents/process-guardian-agent.js",
-    "cleanup:reports": "node functions/cleanupOldReports.js"
+    "cleanup:reports": "node functions/cleanupOldReports.js",
+    "agent:absorb-knowledge": "node agentLearningLoop.js"
   },
   "keywords": [
     "AI",

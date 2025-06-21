@@ -1,0 +1,92 @@
+{
+  "insights-agent": {
+    "agentId": "insights-agent",
+    "phdField": "Digital Marketing Analytics",
+    "university": "MIT",
+    "thesisTitle": "Adaptive Engagement Metrics in Modern Web Ecosystems",
+    "coreKnowledgeDomains": ["marketing analytics", "user behavior", "optimization"],
+    "learningSources": ["https://arxiv.org/rss/cs.IR", "docs/marketing/InsightsPaper.pdf"],
+    "absorptionInterval": "72h"
+  },
+  "report-generator-agent": {
+    "agentId": "report-generator-agent",
+    "phdField": "Computational Documentation",
+    "university": "Stanford",
+    "thesisTitle": "Automated Narrative Assembly from Distributed Agents",
+    "coreKnowledgeDomains": ["report automation", "natural language", "data synthesis"],
+    "learningSources": ["https://arxiv.org/rss/cs.CL", "docs/reporting/AutomationGuide.pdf"],
+    "absorptionInterval": "96h"
+  },
+  "website-scanner-agent": {
+    "agentId": "website-scanner-agent",
+    "phdField": "Web Data Mining",
+    "university": "Oxford",
+    "thesisTitle": "Scalable Extraction of Structured Metadata from the Web",
+    "coreKnowledgeDomains": ["web scraping", "metadata extraction", "information retrieval"],
+    "learningSources": ["https://arxiv.org/rss/cs.IR", "docs/web/WebScraping.pdf"],
+    "absorptionInterval": "48h"
+  },
+  "data-analyst-agent": {
+    "agentId": "data-analyst-agent",
+    "phdField": "Applied Statistics",
+    "university": "Harvard",
+    "thesisTitle": "Robust Statistical Methods for Multi-Agent Outputs",
+    "coreKnowledgeDomains": ["statistics", "correlation analysis", "outlier detection"],
+    "learningSources": ["https://arxiv.org/rss/stat.ML", "docs/data/AnalysisMethods.pdf"],
+    "absorptionInterval": "72h"
+  },
+  "mentor-agent": {
+    "agentId": "mentor-agent",
+    "phdField": "Educational Psychology",
+    "university": "Cambridge",
+    "thesisTitle": "AI Mentorship Dynamics in Virtual Teams",
+    "coreKnowledgeDomains": ["coaching", "learning theory", "team dynamics"],
+    "learningSources": ["https://arxiv.org/rss/cs.AI", "docs/mentorship/BestPractices.pdf"],
+    "absorptionInterval": "120h"
+  },
+  "board-agent": {
+    "agentId": "board-agent",
+    "phdField": "Strategic Decision Systems",
+    "university": "Wharton",
+    "thesisTitle": "Governance Frameworks for Multi-Agent Coordination",
+    "coreKnowledgeDomains": ["governance", "strategy", "organizational theory"],
+    "learningSources": ["https://arxiv.org/rss/cs.CY", "docs/governance/BoardStrategies.pdf"],
+    "absorptionInterval": "168h"
+  },
+  "guardian-agent": {
+    "agentId": "guardian-agent",
+    "phdField": "Behavioral Signal Processing",
+    "university": "Carnegie Mellon",
+    "thesisTitle": "Detecting Deviations in Conversational Patterns",
+    "coreKnowledgeDomains": ["signal processing", "behavior analysis", "ethics"],
+    "learningSources": ["https://arxiv.org/rss/eess.SP", "docs/guardian/MonitoringHandbook.pdf"],
+    "absorptionInterval": "72h"
+  },
+  "codex-qa-agent": {
+    "agentId": "codex-qa-agent",
+    "phdField": "Software Reliability Engineering",
+    "university": "Georgia Tech",
+    "thesisTitle": "Quality Assurance Automation for Cloud Deployments",
+    "coreKnowledgeDomains": ["testing", "reliability", "deployment"],
+    "learningSources": ["https://arxiv.org/rss/cs.SE", "docs/qa/DeploymentTesting.pdf"],
+    "absorptionInterval": "168h"
+  },
+  "process-guardian-agent": {
+    "agentId": "process-guardian-agent",
+    "phdField": "Process Mining",
+    "university": "University of Melbourne",
+    "thesisTitle": "Continuous Compliance through Commit Analytics",
+    "coreKnowledgeDomains": ["process mining", "compliance", "workflow analysis"],
+    "learningSources": ["https://arxiv.org/rss/cs.CY", "docs/process/ComplianceGuide.pdf"],
+    "absorptionInterval": "96h"
+  },
+  "vision-guard-agent": {
+    "agentId": "vision-guard-agent",
+    "phdField": "Innovation Management",
+    "university": "INSEAD",
+    "thesisTitle": "Aligning Product Roadmaps with Strategic Vision",
+    "coreKnowledgeDomains": ["roadmap planning", "innovation", "sop governance"],
+    "learningSources": ["https://arxiv.org/rss/cs.MA", "docs/vision/RoadmapOversight.pdf"],
+    "absorptionInterval": "120h"
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AgentDetailsModal from '../components/AgentDetailsModal';
 import AddAgentForm from '../components/AddAgentForm';
 import { useOrg } from '../OrgContext';
@@ -58,12 +59,12 @@ export default function AgentGallery() {
               <li>Version: {a.version}</li>
             </ul>
             <div className="px-4 pb-4 flex gap-2">
-              <button
-                onClick={() => setActive(a)}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded"
+              <Link
+                to={`/agents/${a.id}`}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded text-center"
               >
-                Learn More
-              </button>
+                Persona
+              </Link>
               <button
                 onClick={() => setActive(a)}
                 className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded"

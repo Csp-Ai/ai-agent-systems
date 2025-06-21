@@ -6,6 +6,7 @@ import MisalignmentProposalsPanel from './components/MisalignmentProposalsPanel'
 import ExecutionLogViewer from './components/ExecutionLogViewer';
 import AgentHealthDashboard from './components/AgentHealthDashboard';
 import AgentGallery from './pages/AgentGallery';
+import AgentBioPage from './pages/AgentBioPage';
 import AgentAdminConsole from './pages/AgentAdminConsole';
 import DepartmentRouter from './pages/DepartmentRouter';
 import './index.css';
@@ -66,6 +67,7 @@ function Shell() {
             <Route path="/proposals" element={<MisalignmentProposalsPanel />} />
             <Route path="/logs" element={<ExecutionLogViewer />} />
             <Route path="/agents" element={<AgentGallery />} />
+            <Route path="/agents/:id" element={<AgentBioPage />} />
             <Route path="/departments/:dept" element={<DepartmentRouter />} />
             <Route path="/admin" element={<AgentAdminConsole />} />
           </Routes>
