@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import AgentSidebar from '../components/AgentSidebar.jsx';
 import RealTimeLogConsole from '../components/RealTimeLogConsole.jsx';
 import StatusCard from '../components/StatusCard.jsx';
+import NeuralAgentMap from '../components/NeuralAgentMap.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { db } from '../frontend/src/firebase';
 import logDashboard from '../utils/logDashboard.js';
@@ -64,6 +65,19 @@ export default function Dashboard() {
             ))}
           </AnimatePresence>
         </div>
+        <NeuralAgentMap
+          agents={agentStates.map(a => ({
+            name: a.id,
+            icon: '🤖',
+            color:
+              a.status === 'running'
+                ? '#10b981'
+                : a.status === 'error'
+                ? '#ef4444'
+                : '#9ca3af'
+          }))}
+          logEvents={[]}
+        />
         <RealTimeLogConsole className="h-64" />
       </div>
     </div>
