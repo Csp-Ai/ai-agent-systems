@@ -3,6 +3,10 @@ import React, { useEffect, useState } from 'react';
 export default function AdminDashboard() {
   const [sessions, setSessions] = useState([]);
   const [days, setDays] = useState(7);
+  const [selectedId, setSelectedId] = useState(null);
+  const [sessionLogs, setSessionLogs] = useState([]);
+  const [retryAgent, setRetryAgent] = useState('');
+  const [retryInput, setRetryInput] = useState('');
 
   const fetchSessions = async () => {
     try {
@@ -17,6 +21,50 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => { fetchSessions(); }, [days]);
+
+  const viewSession = async id => {
+    setSelectedId(id);
+    setSessionLogs([]);
+    setRetryAgent('');
+    setRetryInput('');
+    try {
+      const res = await fetch(`/logs/sessions/${id}/json`, {
+        headers: { 'x-admin-key': localStorage.getItem('adminKey') || '' }
+      });
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setSessionLogs(data);
+        const last = data[data.length - 1];
+        if (last && last.input) {
+          setRetryAgent(last.agent || '');
+          setRetryInput(JSON.stringify(last.input, null, 2));
+        }
+      }
+    } catch {}
+  };
+
+  const runAgain = async () => {
+    if (!retryAgent) return;
+    let input;
+    try {
+      input = JSON.parse(retryInput);
+    } catch {
+      alert('Invalid JSON');
+      return;
+    }
+    try {
+      const res = await fetch('/run-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent: retryAgent, input })
+      });
+      const data = await res.json();
+      if (data.error) alert('Error: ' + data.error);
+      else alert('Agent executed');
+    } catch {
+      alert('Request failed');
+    }
+  };
 
   const downloadSession = async id => {
     try {
@@ -64,6 +112,7 @@ export default function AdminDashboard() {
               <th className="p-2">Agents</th>
               <th className="p-2">Status</th>
               <th className="p-2">Download</th>
+              <th className="p-2">View</th>
             </tr>
           </thead>
           <tbody>
@@ -82,11 +131,40 @@ export default function AdminDashboard() {
                     JSON
                   </button>
                 </td>
+                <td className="p-2">
+                  <button
+                    onClick={() => viewSession(s.sessionId)}
+                    className="text-blue-400 underline"
+                  >
+                    View
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {selectedId && (
+        <div className="mt-6">
+          <h2 className="text-xl font-semibold mb-2">Session {selectedId}</h2>
+          <pre className="bg-black/40 p-2 rounded text-green-300 whitespace-pre-wrap max-h-60 overflow-y-auto">
+            {JSON.stringify(sessionLogs, null, 2)}
+          </pre>
+          {retryAgent && (
+            <div className="mt-4 space-y-2">
+              <h3 className="font-semibold">Try Again ({retryAgent})</h3>
+              <textarea
+                value={retryInput}
+                onChange={e => setRetryInput(e.target.value)}
+                className="w-full p-2 rounded text-black h-32"
+              />
+              <button onClick={runAgain} className="bg-blue-500 text-white px-3 py-1 rounded">
+                Run
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

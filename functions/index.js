@@ -8,6 +8,7 @@ const JSZip = require('jszip');
 const nodemailer = require('nodemailer');
 const { PDFDocument, StandardFonts: pdfFonts } = require('pdf-lib');
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const loadAgents = require('./loadAgents');
 const { registerAgentFromForm, getRegisteredAgents } = require('../utils/agentTools');
 const agentMetadata = require('../agents/agent-metadata.json');
@@ -18,7 +19,9 @@ const {
   appendAuditLog,
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
+const { appendUsageLog } = require('./usageLogger');
 const { reportSOP } = require('./sopReporter');
+const { recordRun, scheduleWeeklySummary } = require('../utils/agentHealthTracker');
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
 
@@ -71,6 +74,7 @@ function isAuthorized(req) {
 }
 
 const app = express();
+scheduleWeeklySummary();
 app.use(cors());
 app.use(express.json());
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -172,7 +176,12 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
-const SIM_ACTION_DIR = path.join(LOG_DIR, 'simulation-actions');
+const DEMO_SESSION_DIR = path.join(LOG_DIR, 'demo-sessions');
+const FEEDBACK_FILE = path.join(LOG_DIR, 'feedback.json');
+const WELCOME_LOG_FILE = path.join(LOG_DIR, 'welcome.json');
+const ANALYTICS_FILE = path.join(LOG_DIR, 'analytics.json');
+const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
+const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -183,8 +192,14 @@ if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
 }
 
-if (!fs.existsSync(SIM_ACTION_DIR)) {
-  fs.mkdirSync(SIM_ACTION_DIR, { recursive: true });
+if (!fs.existsSync(SIM_ACTIONS_DIR)) {
+  fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(NEXT_STEPS_DIR)) {
+  fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
+}
+
 }
 
 // Ensure log directory and file exist
@@ -243,6 +258,12 @@ function ensureSimulationDir() {
   }
 }
 
+function ensureDemoSessionDir() {
+  if (!fs.existsSync(DEMO_SESSION_DIR)) {
+    fs.mkdirSync(DEMO_SESSION_DIR, { recursive: true });
+  }
+}
+
 function readSessionStatus() {
   ensureSessionFiles();
   try {
@@ -294,23 +315,72 @@ function saveSimulationLog(orgId, timestamp, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
-function saveSimulationAction(sessionId, action) {
-  if (!sessionId || !action) return;
-  if (!fs.existsSync(SIM_ACTION_DIR)) {
-    fs.mkdirSync(SIM_ACTION_DIR, { recursive: true });
+function saveDemoSession(data) {
+  ensureDemoSessionDir();
+  const file = path.join(DEMO_SESSION_DIR, `${Date.now()}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function readJson(file, defaultValue) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return defaultValue;
   }
-  const file = path.join(SIM_ACTION_DIR, `${sessionId}.json`);
-  let arr = [];
-  if (fs.existsSync(file)) {
-    try {
-      arr = JSON.parse(fs.readFileSync(file, 'utf8'));
-      if (!Array.isArray(arr)) arr = [];
-    } catch {
-      arr = [];
-    }
+}
+
+function writeJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function appendFeedback(entry) {
+  const list = readJson(FEEDBACK_FILE, []);
+  list.push(entry);
+  writeJson(FEEDBACK_FILE, list);
+}
+
+function appendWelcomeLog(entry) {
+  const list = readJson(WELCOME_LOG_FILE, []);
+  list.push(entry);
+  writeJson(WELCOME_LOG_FILE, list);
+}
+
+function appendAnalytics(entry) {
+  const list = readJson(ANALYTICS_FILE, []);
+  list.push(entry);
+  writeJson(ANALYTICS_FILE, list);
+}
+
+function readAnalytics() {
+  return readJson(ANALYTICS_FILE, []);
+}
+
+function appendSimulationAction(id, action) {
+  if (!fs.existsSync(SIM_ACTIONS_DIR)) {
+    fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
   }
-  arr.push({ timestamp: new Date().toISOString(), action });
-  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+  const file = path.join(SIM_ACTIONS_DIR, `${id}.json`);
+  const list = readJson(file, []);
+  list.push({ timestamp: new Date().toISOString(), action });
+  writeJson(file, list);
+}
+
+function readSimulationActions(id) {
+  const file = path.join(SIM_ACTIONS_DIR, `${id}.json`);
+  return readJson(file, []);
+}
+
+function saveNextSteps(id, data) {
+  if (!fs.existsSync(NEXT_STEPS_DIR)) {
+    fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
+  }
+  writeJson(path.join(NEXT_STEPS_DIR, `${id}.json`), data);
+}
+
+function readNextSteps(id) {
+  return readJson(path.join(NEXT_STEPS_DIR, `${id}.json`), {});
+}
+
 }
 
 
@@ -357,7 +427,7 @@ app.use((req, res, next) => {
 // Object to hold loaded agents keyed by file name (without extension)
 let registeredAgents = getRegisteredAgents();
 
-async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step) {
+async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step, orgId, userId) {
   if (results[agentName]) return results[agentName];
 
   if (stack.includes(agentName)) {
@@ -376,7 +446,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
 
   const depResults = {};
   for (const dep of metadata.dependsOn || []) {
-    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step);
+    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step, orgId, userId);
   }
 
   const expectedInputs = metadata.inputs || {};
@@ -391,6 +461,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
   }
 
   const startTime = Date.now();
+  const inputHash = crypto.createHash('sha256').update(JSON.stringify(input)).digest('hex');
   let result;
   try {
     if (sessionId !== undefined && step !== undefined) {
@@ -425,7 +496,16 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       input,
       output: result
     });
+    appendUsageLog(orgId, agentName, {
+      timestamp: new Date().toISOString(),
+      userId,
+      inputHash,
+      status: 'success',
+      duration: Date.now() - startTime
+    });
     logAgentAction({ sessionId, agent: agentName, input, result });
+
+    recordRun(agentName, true, Date.now() - startTime);
 
     results[agentName] = result;
     stack.pop();
@@ -455,8 +535,16 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       input,
       error: err.message
     });
+    appendUsageLog(orgId, agentName, {
+      timestamp: new Date().toISOString(),
+      userId,
+      inputHash,
+      status: 'error',
+      duration: Date.now() - startTime
+    });
     logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
     stack.pop();
+    recordRun(agentName, false, Date.now() - startTime);
     await reportSOP(agentName, {
       goal: metadata.description || '',
       steps: [{ name: 'run', durationMs: Date.now() - startTime }],
@@ -479,6 +567,9 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')
 app.use('/client', express.static(path.join(__dirname, '..', 'frontend', 'client')));
 // Serve strategy board assets
 app.use('/board', express.static(path.join(__dirname, '..', 'frontend', 'board')));
+
+// Serve glossary assets
+app.use('/glossary-assets', express.static(path.join(__dirname, '..', 'frontend', 'glossary')));
 
 // Serve generated PDF reports from logs/reports
 app.use('/reports', express.static('logs/reports'));
@@ -511,6 +602,19 @@ app.get('/logs/sessions/:id', (req, res) => {
   const file = path.join(SESSION_LOG_DIR, `${req.params.id}.json`);
   if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
   res.download(file);
+});
+
+// Return session log JSON for viewing in the dashboard
+app.get('/logs/sessions/:id/json', (req, res) => {
+  if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const file = path.join(SESSION_LOG_DIR, `${req.params.id}.json`);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: 'Failed to read log' });
+  }
 });
 
 const STAGING_DIR = path.join(__dirname, '..', 'agents', 'staging');
@@ -602,7 +706,7 @@ async function handleExecuteAgent(req, res) {
 
   try {
     const results = {};
-    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step);
+    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step, orgId, uid);
     if (locale) {
       finalResult = await translateOutput(finalResult, locale);
       results[agentName] = finalResult;
@@ -899,6 +1003,33 @@ app.get('/strategy-board', async (req, res) => {
   }
 });
 
+// Agent glossary page
+app.get('/glossary', (req, res) => {
+  const list = Object.entries(agentMetadata).map(([id, meta]) => ({
+    id,
+    name: meta.name,
+    description: meta.description,
+    category: meta.category
+  }));
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Agent Glossary</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100">
+    <div id="root"></div>
+    <script>window.agentData = ${JSON.stringify(list)};</script>
+    <script type="text/babel" src="/glossary-assets/Glossary.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<Glossary agents={window.agentData} />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
+});
+
 // Return recent audit logs
 app.get('/audit', (req, res) => {
   try {
@@ -1001,12 +1132,101 @@ app.post('/logs/simulation-actions/:id', (req, res) => {
   const { action } = req.body || {};
   if (!action) return res.status(400).json({ error: 'invalid payload' });
   try {
-    saveSimulationAction(id, action);
+    appendSimulationAction(id, { timestamp: new Date().toISOString(), action });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed to save simulation action' });
+  }
+});
+
+app.get('/demo-agents', (_req, res) => {
+  const list = Object.entries(agentMetadata)
+    .filter(([, m]) => m.visibleToDemo)
+    .map(([id, m]) => ({ id, name: m.name, description: m.description }));
+  res.json(list);
+});
+
+app.post('/logs/demo-sessions', (req, res) => {
+  const { workflow = '', inputs = {} } = req.body || {};
+  if (!workflow) return res.status(400).json({ error: 'workflow required' });
+  try {
+    saveDemoSession({ workflow, inputs, timestamp: new Date().toISOString() });
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'failed to save' });
   }
 });
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed to save' });
+  }
+});
+
+// General logs
+app.get('/logs', (_req, res) => {
+  res.json(readLogs());
+});
+
+app.post('/logs', (req, res) => {
+  const entry = req.body || {};
+  appendLog({ ...entry, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Welcome page log
+app.post('/welcome-log', (req, res) => {
+  const { referrer = '', userAgent = '' } = req.body || {};
+  appendWelcomeLog({ id: uuidv4(), referrer, userAgent, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Feedback submission
+app.post('/feedback', (req, res) => {
+  const { type = 'general', message = '', sessionId = '' } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'message required' });
+  appendFeedback({ id: uuidv4(), type, message, sessionId, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Analytics events
+app.get('/analytics', (_req, res) => {
+  res.json(readAnalytics());
+});
+
+app.post('/analytics', (req, res) => {
+  const { event = '', data = {} } = req.body || {};
+  if (!event) return res.status(400).json({ error: 'event required' });
+  appendAnalytics({ id: uuidv4(), event, data, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Simulation actions
+app.get('/simulation-actions/:id', (req, res) => {
+  res.json(readSimulationActions(req.params.id));
+});
+
+app.post('/simulation-actions/:id', (req, res) => {
+  const { action = '' } = req.body || {};
+  if (!action) return res.status(400).json({ error: 'action required' });
+  appendSimulationAction(req.params.id, { id: uuidv4(), action, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Next steps data
+app.get('/next-steps/:id', (req, res) => {
+  res.json(readNextSteps(req.params.id));
+});
+
+app.post('/next-steps/:id', (req, res) => {
+  saveNextSteps(req.params.id, req.body || {});
+  res.json({ success: true });
+});
+
+// Generate share token for a URL
+app.post('/share', (req, res) => {
+  const { url } = req.body || {};
+  if (!url) return res.status(400).json({ error:
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {

@@ -21,7 +21,7 @@ const indexHtml = (() => {
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'dist',
+    outDir: 'build',
     emptyOutDir: true,
     rollupOptions: {
       input: indexHtml,
