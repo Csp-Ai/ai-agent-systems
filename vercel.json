@@ -9,6 +9,7 @@
     }
   ],
   "rewrites": [
+    { "handle": "filesystem" },
     { "source": "/(.*)", "destination": "/frontend/index.html" }
   ]
 }
