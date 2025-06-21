@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { OrgProvider, useOrg } from './OrgContext';
+import { PersonaProvider, usePersona } from './PersonaContext';
+import PersonaDashboard from './PersonaDashboard';
 import AgentStatusTable from './components/AgentStatusTable';
 import MisalignmentProposalsPanel from './components/MisalignmentProposalsPanel';
 import ExecutionLogViewer from './components/ExecutionLogViewer';
@@ -15,6 +17,7 @@ function Shell() {
     localStorage.getItem('theme') === 'dark'
   );
   const { orgId, setOrgId, orgs, loading } = useOrg();
+  const { role } = usePersona();
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -47,13 +50,26 @@ function Shell() {
       <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <aside className="w-48 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 flex flex-col">
           <nav className="flex flex-col space-y-2 flex-1">
-            <Link to="/" className="hover:underline">Status</Link>
+            <Link to="/" className="hover:underline">Home</Link>
+            <Link to="/status" className="hover:underline">Status</Link>
             <Link to="/health" className="hover:underline">Health</Link>
             <Link to="/proposals" className="hover:underline">Proposals</Link>
             <Link to="/logs" className="hover:underline">Logs</Link>
             <Link to="/agents" className="hover:underline">Agents</Link>
             <Link to="/admin" className="hover:underline">Admin</Link>
             <Link to="/departments/sales" className="hover:underline">Departments</Link>
+            {role === 'Developer' && (
+              <>
+                <Link to="/api-keys" className="hover:underline">API Keys</Link>
+                <Link to="/agents" className="hover:underline">Registry Tools</Link>
+              </>
+            )}
+            {role === 'Marketing' && (
+              <>
+                <Link to="/agents#trend-analysis-agent" className="hover:underline">Trend Analysis</Link>
+                <Link to="/agents#content-strategy-agent" className="hover:underline">Content Strategy</Link>
+              </>
+            )}
           </nav>
           <button onClick={() => setDark(!dark)} className="text-sm mt-4">
             Toggle {dark ? 'Light' : 'Dark'}
@@ -61,7 +77,8 @@ function Shell() {
         </aside>
         <main className="flex-1 overflow-auto">
           <Routes>
-            <Route path="/" element={<AgentStatusTable />} />
+            <Route path="/" element={<PersonaDashboard />} />
+            <Route path="/status" element={<AgentStatusTable />} />
             <Route path="/health" element={<AgentHealthDashboard />} />
             <Route path="/proposals" element={<MisalignmentProposalsPanel />} />
             <Route path="/logs" element={<ExecutionLogViewer />} />
@@ -78,7 +95,9 @@ function Shell() {
 export default function App() {
   return (
     <OrgProvider>
-      <Shell />
+      <PersonaProvider>
+        <Shell />
+      </PersonaProvider>
     </OrgProvider>
   );
 }
