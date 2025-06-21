@@ -7,6 +7,7 @@ import {
 import AgentTracker from './AgentTracker';
 import AgentConsoleView from './AgentConsoleView';
 import AgentInteractionVisualizer from './AgentInteractionVisualizer';
+import './LandingPage.css'; // 🧠 NEW import
 
 const LandingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -59,16 +60,12 @@ const LandingPage = () => {
     }
   }, []);
 
-  // Poll status while analysis is running
   useEffect(() => {
     if (!isAnalyzing || analysisComplete || !sessionId) return;
-
-    // immediately fetch once when starting
     fetchStatus(sessionId);
     const interval = setInterval(() => {
       fetchStatus(sessionId);
     }, 3000);
-
     return () => clearInterval(interval);
   }, [isAnalyzing, analysisComplete, sessionId]);
 
@@ -116,7 +113,6 @@ const LandingPage = () => {
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
-  // Listen to Firestore logs in real time
   const subscribeToLogs = () => {
     const q = query(collection(db, 'logs'), orderBy('timestamp'));
     return onSnapshot(q, snap => {
@@ -210,8 +206,6 @@ const LandingPage = () => {
                     currentStep={currentStep}
                     status={stepStatus}
                   />
-                  
-                  {/* Animated Overlay + Console View */}
                   {currentStep === 0 && (
                     <div className="relative mt-4 w-full">
                       <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">
@@ -271,31 +265,3 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
-@keyframes pulse-glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 0px rgba(0, 255, 255, 0.5));
-  }
-  50% {
-    filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.9));
-  }
-}
-
-@keyframes arc-flow {
-  from {
-    stroke-dashoffset: 60;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-.drop-shadow-glow {
-  animation: pulse-glow 1.2s ease-in-out infinite;
-}
-
-.animate-arc {
-  stroke-dasharray: 60;
-  stroke-dashoffset: 60;
-  animation: arc-flow 0.8s ease forwards;
-}
-

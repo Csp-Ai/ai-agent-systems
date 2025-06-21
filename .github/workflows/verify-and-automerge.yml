@@ -1,0 +1,25 @@
+name: Verify and Auto Merge
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm install
+      - run: npx eslint .
+      - run: npm test
+      - run: node scripts/check-route-collisions.js
+      - name: Auto merge
+        if: ${{ github.event.pull_request.mergeable_state == 'clean' }}
+        run: gh pr merge ${{ github.event.pull_request.number }} --merge --auto
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
