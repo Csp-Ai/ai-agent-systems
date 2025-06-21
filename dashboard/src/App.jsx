@@ -7,6 +7,7 @@ import ExecutionLogViewer from './components/ExecutionLogViewer';
 import AgentHealthDashboard from './components/AgentHealthDashboard';
 import AgentGallery from './pages/AgentGallery';
 import AgentAdminConsole from './pages/AgentAdminConsole';
+import MyStackBuilder from './pages/MyStackBuilder';
 import DepartmentRouter from './pages/DepartmentRouter';
 import './index.css';
 
@@ -52,6 +53,7 @@ function Shell() {
             <Link to="/proposals" className="hover:underline">Proposals</Link>
             <Link to="/logs" className="hover:underline">Logs</Link>
             <Link to="/agents" className="hover:underline">Agents</Link>
+            <Link to="/stacks/new" className="hover:underline">+ New Stack</Link>
             <Link to="/admin" className="hover:underline">Admin</Link>
             <Link to="/departments/sales" className="hover:underline">Departments</Link>
           </nav>
@@ -66,6 +68,7 @@ function Shell() {
             <Route path="/proposals" element={<MisalignmentProposalsPanel />} />
             <Route path="/logs" element={<ExecutionLogViewer />} />
             <Route path="/agents" element={<AgentGallery />} />
+            <Route path="/stacks/new" element={<MyStackBuilder />} />
             <Route path="/departments/:dept" element={<DepartmentRouter />} />
             <Route path="/admin" element={<AgentAdminConsole />} />
           </Routes>

@@ -53,7 +53,7 @@ export default function UseCaseSelector() {
             <button
               key={c.key}
               onClick={() => setActive(c.key)}
-              className={`rounded-xl p-5 border border-white/20 backdrop-blur hover:bg-white/10 transition ${active===c.key?'bg-white/10':'bg-white/5'}`}
+              className={`rounded-xl p-5 border border-white/20 backdrop-blur hover:bg-white/10 transition ${active === c.key ? 'bg-white/10' : 'bg-white/5'}`}
             >
               <span className="text-2xl mr-2">{c.label.split(' ')[0]}</span>
               <span className="text-lg font-medium">{c.label.split(' ').slice(1).join(' ')}</span>
@@ -70,9 +70,9 @@ export default function UseCaseSelector() {
               className="bg-white/10 p-6 rounded-xl border border-white/20"
             >
               <h2 className="text-2xl font-semibold mb-2">
-                {CASES.find(c => c.key===active).label}
+                {CASES.find(c => c.key === active).label}
               </h2>
-              <p className="mb-4 text-gray-200">{CASES.find(c => c.key===active).desc}</p>
+              <p className="mb-4 text-gray-200">{CASES.find(c => c.key === active).desc}</p>
               <ul className="space-y-2 mb-4">
                 {recommended(active).map(a => (
                   <li key={a.id} className="flex items-start">

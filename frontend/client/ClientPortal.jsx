@@ -69,11 +69,14 @@ export default function ClientPortal({ reports = [] }) {
               <li key={tab}>
                 <button
                   onClick={() => setActiveTab(tab)}
-                  className={`w-full text-left px-3 py-1 rounded hover:bg-gray-700 transition-colors ${
+                  className={`group relative w-full text-left px-3 py-1 rounded hover:bg-gray-700 transition-colors ${
                     activeTab === tab ? 'font-bold' : ''
                   }`}
                 >
                   {tab}
+                  <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2 px-2 py-1 text-xs bg-black text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none">
+                    {tab === 'Reports' ? '/reports' : tab === 'Activity' ? '/activity' : '/billing'}
+                  </span>
                 </button>
               </li>
             ))}
