@@ -1,0 +1,27 @@
+{
+  "builder": {
+    "label": "Builder",
+    "emoji": "\uD83D\uDD27",
+    "links": ["/use-cases", "/agents", "/demo"]
+  },
+  "strategist": {
+    "label": "Strategist",
+    "emoji": "\uD83E\uDD16",
+    "links": ["/agents", "/reports", "/demo"]
+  },
+  "founder": {
+    "label": "Startup Founder",
+    "emoji": "\uD83D\uDE80",
+    "links": ["/use-cases", "/demo", "/reports"]
+  },
+  "business": {
+    "label": "Exploring AI for Business",
+    "emoji": "\uD83E\uDDFE",
+    "links": ["/use-cases", "/demo", "/reports"]
+  },
+  "explorer": {
+    "label": "Just looking around",
+    "emoji": "\uD83D\uDC40",
+    "links": ["/agents", "/demo", "/reports"]
+  }
+}
