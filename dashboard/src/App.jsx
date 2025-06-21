@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import FeedbackFab from './components/FeedbackFab.jsx';
 import { OrgProvider, useOrg } from './OrgContext';
 import AgentStatusTable from './components/AgentStatusTable';
 import MisalignmentProposalsPanel from './components/MisalignmentProposalsPanel';
@@ -7,6 +8,7 @@ import ExecutionLogViewer from './components/ExecutionLogViewer';
 import AgentHealthDashboard from './components/AgentHealthDashboard';
 import AgentGallery from './pages/AgentGallery';
 import AgentAdminConsole from './pages/AgentAdminConsole';
+import MyStackBuilder from './pages/MyStackBuilder';
 import DepartmentRouter from './pages/DepartmentRouter';
 import SimulateAgent from './pages/SimulateAgent';
 import FounderInsights from './pages/FounderInsights';
@@ -54,8 +56,10 @@ function Shell() {
             <Link to="/proposals" className="hover:underline">Proposals</Link>
             <Link to="/logs" className="hover:underline">Logs</Link>
             <Link to="/agents" className="hover:underline">Agents</Link>
-            <Link to="/simulate-agent" className="hover:underline">Simulate</Link>
-            <Link to="/founder-insights" className="hover:underline">Founder Insights</Link>
+<Link to="/simulate-agent" className="hover:underline">Simulate</Link>
+<Link to="/founder-insights" className="hover:underline">Founder Insights</Link>
+<Link to="/stacks/new" className="hover:underline">+ New Stack</Link>
+
             <Link to="/admin" className="hover:underline">Admin</Link>
             <Link to="/departments/sales" className="hover:underline">Departments</Link>
           </nav>
@@ -70,13 +74,16 @@ function Shell() {
             <Route path="/proposals" element={<MisalignmentProposalsPanel />} />
             <Route path="/logs" element={<ExecutionLogViewer />} />
             <Route path="/agents" element={<AgentGallery />} />
-            <Route path="/simulate-agent" element={<SimulateAgent />} />
-            <Route path="/founder-insights" element={<FounderInsights />} />
+<Route path="/simulate-agent" element={<SimulateAgent />} />
+<Route path="/founder-insights" element={<FounderInsights />} />
+<Route path="/stacks/new" element={<MyStackBuilder />} />
+
             <Route path="/departments/:dept" element={<DepartmentRouter />} />
             <Route path="/admin" element={<AgentAdminConsole />} />
           </Routes>
         </main>
       </div>
+      <FeedbackFab />
     </Router>
   );
 }

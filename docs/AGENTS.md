@@ -46,6 +46,7 @@ Every agent must have an entry in `agents/agent-metadata.json`. A typical entry 
   "dependsOn": ["other-agent"],
   "category": "Utility",
   "enabled": true,
+  "accessRoles": ["admin", "analyst"],
   "version": "1.0.0",
   "createdBy": "Your Name",
   "lastUpdated": "2025-06-19"
@@ -54,6 +55,7 @@ Every agent must have an entry in `agents/agent-metadata.json`. A typical entry 
 
 Fields like `inputs` and `outputs` describe the expected shape of the request and response. `enabled` controls whether the API will allow execution.
 `dependsOn` is an optional array listing other agents that must run before this one. The backend resolves these dependencies and executes agents in order.
+`accessRoles` is an optional array of roles allowed to use the agent.
 
 ## API Usage
 

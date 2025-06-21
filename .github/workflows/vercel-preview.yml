@@ -1,0 +1,70 @@
+name: Vercel PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      GIT_TERMINAL_PROMPT: 0
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Detect production changes
+        id: changes
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+          CHANGED=$(git diff --name-only FETCH_HEAD HEAD)
+          echo "$CHANGED"
+          if ! echo "$CHANGED" | grep -E '^(frontend/|functions/|agents/|index.js|package.json|package-lock.json)' >/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - run: npm ci
+        if: steps.changes.outputs.skip != 'true'
+
+      - name: Stub Firebase env vars
+        if: steps.changes.outputs.skip != 'true'
+        run: |
+          echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:-dummy}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:-dummy}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-dummy}" >> $GITHUB_ENV
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+
+      - name: Install Vercel CLI
+        if: steps.changes.outputs.skip != 'true'
+        run: npm install -g vercel
+
+      - name: Deploy to Vercel
+        if: steps.changes.outputs.skip != 'true'
+        id: vercel
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          vercel --prod=false --confirm > deploy-url.txt
+          echo "preview_url=$(tail -n1 deploy-url.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Comment preview URL
+        if: steps.changes.outputs.skip != 'true' && steps.vercel.outcome == 'success'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const url = process.env.PREVIEW_URL;
+            const pr = context.payload.pull_request.number;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr,
+              body: `Vercel Preview: ${url}`
+            });
+        env:
+          PREVIEW_URL: ${{ steps.vercel.outputs.preview_url }}

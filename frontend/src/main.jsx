@@ -1,14 +1,102 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import LandingPage from './LandingPage.jsx'
-import DevToolsPanel from './DevToolsPanel.jsx'
+import React, { StrictMode, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { AnimatePresence } from 'framer-motion';
+import './index.css';
+import LandingPage from './LandingPage.jsx';
+import DevToolsPanel from './DevToolsPanel.jsx';
+import DemoPage from './DemoPage.jsx';
+import UseCaseSelector from './UseCaseSelector.jsx';
+import WelcomeOverlay from './WelcomeOverlay.jsx';
+import WelcomeExperience from './WelcomeExperience.jsx';
+import OnboardingOverlay from './OnboardingOverlay.jsx';
+import Gallery from './Gallery.jsx';
+import AdminDashboard from '../AdminDashboard.jsx';
+import FeedbackFab from './FeedbackFab.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
+
+const path = window.location.pathname;
+
+function App() {
+  try {
+    const isDemo = path.startsWith('/demo');
+    const isGallery = path.startsWith('/gallery');
+    const isUseCases = path.startsWith('/use-cases');
+    const isDashboard = path.startsWith('/dashboard');
+
+    const [onboarded, setOnboarded] = useState(
+      localStorage.getItem('onboarded') === 'true'
+    );
+    const [experienceSeen, setExperienceSeen] = useState(
+      localStorage.getItem('welcomeExperienceSeen') === 'true'
+    );
+    const [welcomeDismissed, setWelcomeDismissed] = useState(
+      localStorage.getItem('welcomeOverlayDismissed') === 'true'
+    );
+
+    const markOnboarded = () => {
+      localStorage.setItem('onboarded', 'true');
+      setOnboarded(true);
+    };
+
+    const finishExperience = () => {
+      localStorage.setItem('welcomeExperienceSeen', 'true');
+      setExperienceSeen(true);
+    };
+
+    const dismissWelcome = () => {
+      localStorage.setItem('welcomeOverlayDismissed', 'true');
+      setWelcomeDismissed(true);
+    };
+
+    let content;
+    if (isDemo) {
+      content = <DemoPage />;
+    } else if (isGallery) {
+      content = <Gallery />;
+    } else if (isUseCases) {
+      content = <UseCaseSelector />;
+    } else if (isDashboard) {
+      content = <AdminDashboard />;
+    } else {
+      content = (
+        <>
+          <LandingPage />
+          <DevToolsPanel />
+        </>
+      );
+    }
+
+    console.log({ isGallery, isDemo, isUseCases, content });
+
+    if (!content) {
+      content = <LandingPage />;
+    }
+
+    return (
+      <>
+        {content}
+        <FeedbackFab />
+        <AnimatePresence>
+          {!onboarded && <OnboardingOverlay onComplete={markOnboarded} />}
+          {onboarded && !experienceSeen && (
+            <WelcomeExperience onFinish={finishExperience} />
+          )}
+          {onboarded && experienceSeen && !welcomeDismissed && (
+            <WelcomeOverlay onDismiss={dismissWelcome} />
+          )}
+        </AnimatePresence>
+      </>
+    );
+  } catch (err) {
+    console.error('App crashed:', err);
+    return <LandingPage />;
+  }
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <>
-      <LandingPage />
-      <DevToolsPanel />
-    </>
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
-)
+);
