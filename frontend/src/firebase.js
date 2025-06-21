@@ -8,6 +8,18 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+let app;
+let db;
+let auth;
+
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+} catch (err) {
+  console.error('Failed to initialize Firebase:', err);
+  db = {};
+  auth = { currentUser: null };
+}
+
+export { db, auth };
