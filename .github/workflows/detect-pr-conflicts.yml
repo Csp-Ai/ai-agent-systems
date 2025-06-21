@@ -7,6 +7,8 @@ on:
 jobs:
   check-conflicts:
     runs-on: ubuntu-latest
+    env:
+      GIT_TERMINAL_PROMPT: 0
     steps:
       - uses: actions/checkout@v3
         with:

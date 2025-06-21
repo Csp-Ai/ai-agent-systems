@@ -8,6 +8,8 @@ on:
 jobs:
   governance:
     runs-on: ubuntu-latest
+    env:
+      GIT_TERMINAL_PROMPT: 0
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
