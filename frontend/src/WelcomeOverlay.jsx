@@ -19,7 +19,7 @@ const personas = {
   }
 };
 
-export default function WelcomeOverlay() {
+export default function WelcomeOverlay({ onDismiss }) {
   const [show, setShow] = useState(false);
   const [persona, setPersona] = useState('');
 
@@ -39,6 +39,7 @@ export default function WelcomeOverlay() {
   const acknowledge = () => {
     localStorage.setItem('welcomeAcknowledged', 'true');
     setShow(false);
+    if (onDismiss) onDismiss(); // ← Support for old prop if passed
   };
 
   return (
@@ -57,7 +58,7 @@ export default function WelcomeOverlay() {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
-            {!persona && (
+            {!persona ? (
               <>
                 <h2 className="text-xl font-semibold mb-4">Welcome! Who are you?</h2>
                 <div className="space-y-2">
@@ -75,8 +76,7 @@ export default function WelcomeOverlay() {
                   Skip
                 </button>
               </>
-            )}
-            {persona && (
+            ) : (
               <>
                 <h2 className="text-xl font-semibold mb-2">Welcome {personas[persona].title}!</h2>
                 <p className="mb-4 text-sm">{personas[persona].message}</p>

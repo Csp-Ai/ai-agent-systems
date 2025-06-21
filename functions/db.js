@@ -1,8 +1,12 @@
-const { admin } = require('../firebase');
+const { admin, db } = require('../firebase');
+const chalk = require('chalk');
 
-const db = admin.firestore();
+if (!db) {
+  console.error(chalk.redBright("\uD83D\uDD25 Firebase config missing. Skipping initialization."));
+}
 
 function coll(path) {
+  if (!db) return null;
   const parts = path.split('/').filter(Boolean);
   let ref = db;
   while (parts.length) {
@@ -17,16 +21,22 @@ function coll(path) {
 }
 
 async function appendToCollection(path, data) {
-  await coll(path).add({ ...data, timestamp: new Date().toISOString() });
+  const ref = coll(path);
+  if (!ref) return;
+  await ref.add({ ...data, timestamp: new Date().toISOString() });
 }
 
 async function readCollection(path) {
-  const snap = await coll(path).orderBy('timestamp').get();
+  const ref = coll(path);
+  if (!ref) return [];
+  const snap = await ref.orderBy('timestamp').get();
   return snap.docs.map(d => d.data());
 }
 
 async function writeDocument(path, id, data) {
-  await coll(path).doc(id).set(data, { merge: true });
+  const ref = coll(path);
+  if (!ref) return;
+  await ref.doc(id).set(data, { merge: true });
 }
 
 module.exports = { db, appendToCollection, readCollection, writeDocument };

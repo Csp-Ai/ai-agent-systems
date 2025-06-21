@@ -28,7 +28,8 @@
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "report-generator-agent": {
     "name": "Report Generator",
@@ -58,7 +59,8 @@
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
@@ -85,7 +87,8 @@
     ],
     "lifecycle": "production",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "data-analyst-agent": {
     "name": "Data Analyst Agent",
@@ -113,7 +116,7 @@
     ],
     "lifecycle": "incubation",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
   },
   "mentor-agent": {
     "name": "Mentor Agent",
@@ -162,7 +165,10 @@
     ],
     "lifecycle": "production",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "accessRoles": [
+      "admin"
+    ]
   },
   "guardian-agent": {
     "name": "Guardian Agent",
@@ -186,7 +192,10 @@
     ],
     "lifecycle": "production",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "accessRoles": [
+      "admin"
+    ]
   },
   "codex-qa-agent": {
     "name": "Codex QA Agent",
@@ -253,6 +262,61 @@
     "locales": [
       "en"
     ],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
+  },
+  "vercel-ops-agent": {
+    "name": "Vercel Ops Agent",
+    "description": "Validates Vercel config, cleans Firebase leftovers and reports deploy issues.",
+    "inputs": {
+      "prNumber": "number",
+      "project": "string",
+      "branch": "string",
+      "triggerDeploy": "boolean",
+      "deploymentStatus": "string",
+      "deploymentError": "string"
+    },
+    "outputs": {
+      "actions": "array",
+      "previewUrl": "string",
+      "error": "string"
+    },
+    "category": "DevOps",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": [
+      "en"
+    ],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
+  }
+  , "vercel-swat-agent": {
+    "name": "Vercel SWAT Agent",
+    "description": "Diagnoses Vercel production issues, handles analytics and package fetch fallbacks, and reboots the pipeline cleanly.",
+    "inputs": {
+      "sessionId": "string",
+      "registeredAgents": "array",
+      "logSnapshot": "object",
+      "vercel.json": "object"
+    },
+    "outputs": {
+      "diagnosticReport": "array",
+      "autoFixSummary": "array",
+      "fallbackTriggerLog": "array"
+    },
+    "dependencies": ["firebase-admin", "node-fetch", "chalk"],
+    "category": "DevOps",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": ["en"],
     "lifecycle": "incubation",
     "locale": "en-US",
     "misaligned": false
