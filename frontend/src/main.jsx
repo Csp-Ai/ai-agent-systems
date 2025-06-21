@@ -10,6 +10,7 @@ import WelcomeOverlay from './WelcomeOverlay.jsx';
 import WelcomeExperience from './WelcomeExperience.jsx';
 import OnboardingOverlay from './OnboardingOverlay.jsx';
 import AgentsGallery from '../AgentsGallery.jsx';
+import AdminDashboard from '../AdminDashboard.jsx';
 
 const path = window.location.pathname;
 
@@ -17,6 +18,7 @@ function App() {
   const isDemo = path.startsWith('/demo');
   const isGallery = path.startsWith('/gallery');
   const isUseCases = path.startsWith('/use-cases');
+  const isDashboard = path.startsWith('/dashboard');
 
   const [onboarded, setOnboarded] = useState(
     localStorage.getItem('onboarded') === 'true'
@@ -50,6 +52,8 @@ function App() {
     content = <AgentsGallery />;
   } else if (isUseCases) {
     content = <UseCaseSelector />;
+  } else if (isDashboard) {
+    content = <AdminDashboard />;
   } else {
     content = (
       <>

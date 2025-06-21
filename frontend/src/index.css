@@ -14,3 +14,11 @@
 .drop-shadow-glow {
   filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
 }
+
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+.animate-fade-out {
+  animation: fade-out 1s forwards;
+}

@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import ReactFlow, { Background, Controls } from "reactflow";
+import "reactflow/dist/style.css";
+import FeedbackForm from "./src/FeedbackForm.jsx";
 
 export default function AgentsGallery() {
   const [agents, setAgents] = useState([]);
@@ -75,6 +78,27 @@ export default function AgentsGallery() {
     }
     setWorkflowOutput(outputs);
   };
+
+  const mapNodes = useMemo(
+    () =>
+      selectedAgents.map((a, i) => ({
+        id: a.id,
+        data: { label: a.name },
+        position: { x: i * 150, y: 0 }
+      })),
+    [selectedAgents]
+  );
+
+  const mapEdges = useMemo(
+    () =>
+      selectedAgents.slice(1).map((a, i) => ({
+        id: `${selectedAgents[i].id}-${a.id}`,
+        source: selectedAgents[i].id,
+        target: a.id,
+        animated: true
+      })),
+    [selectedAgents]
+  );
 
   return (
     <div className="p-6 text-white">
@@ -162,6 +186,17 @@ export default function AgentsGallery() {
           ))}
         </div>
       )}
+
+      {selectedAgents.length > 1 && (
+        <div className="h-64 mt-8 rounded-lg bg-white/5">
+          <ReactFlow nodes={mapNodes} edges={mapEdges} fitView>
+            <Background />
+            <Controls />
+          </ReactFlow>
+        </div>
+      )}
+
+      <FeedbackForm />
     </div>
   );
 }
