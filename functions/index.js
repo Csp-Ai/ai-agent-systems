@@ -8,6 +8,7 @@ const JSZip = require('jszip');
 const nodemailer = require('nodemailer');
 const { PDFDocument, StandardFonts: pdfFonts } = require('pdf-lib');
 const crypto = require('crypto');
+const { v4: uuidv4 } = require('uuid');
 const loadAgents = require('./loadAgents');
 const { registerAgentFromForm, getRegisteredAgents } = require('../utils/agentTools');
 const agentMetadata = require('../agents/agent-metadata.json');
@@ -176,6 +177,11 @@ const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
 const DEMO_SESSION_DIR = path.join(LOG_DIR, 'demo-sessions');
+const FEEDBACK_FILE = path.join(LOG_DIR, 'feedback.json');
+const WELCOME_LOG_FILE = path.join(LOG_DIR, 'welcome.json');
+const ANALYTICS_FILE = path.join(LOG_DIR, 'analytics.json');
+const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
+const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -184,6 +190,14 @@ if (!fs.existsSync(REPORTS_DIR)) {
 
 if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(SIM_ACTIONS_DIR)) {
+  fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(NEXT_STEPS_DIR)) {
+  fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
 }
 
 // Ensure log directory and file exist
@@ -303,6 +317,62 @@ function saveDemoSession(data) {
   ensureDemoSessionDir();
   const file = path.join(DEMO_SESSION_DIR, `${Date.now()}.json`);
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function readJson(file, defaultValue) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return defaultValue;
+  }
+}
+
+function writeJson(file, data) {
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function appendFeedback(entry) {
+  const list = readJson(FEEDBACK_FILE, []);
+  list.push(entry);
+  writeJson(FEEDBACK_FILE, list);
+}
+
+function appendWelcomeLog(entry) {
+  const list = readJson(WELCOME_LOG_FILE, []);
+  list.push(entry);
+  writeJson(WELCOME_LOG_FILE, list);
+}
+
+function appendAnalytics(entry) {
+  const list = readJson(ANALYTICS_FILE, []);
+  list.push(entry);
+  writeJson(ANALYTICS_FILE, list);
+}
+
+function readAnalytics() {
+  return readJson(ANALYTICS_FILE, []);
+}
+
+function appendSimulationAction(id, entry) {
+  if (!fs.existsSync(SIM_ACTIONS_DIR)) fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
+  const file = path.join(SIM_ACTIONS_DIR, `${id}.json`);
+  const list = readJson(file, []);
+  list.push(entry);
+  writeJson(file, list);
+}
+
+function readSimulationActions(id) {
+  const file = path.join(SIM_ACTIONS_DIR, `${id}.json`);
+  return readJson(file, []);
+}
+
+function saveNextSteps(id, data) {
+  if (!fs.existsSync(NEXT_STEPS_DIR)) fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
+  writeJson(path.join(NEXT_STEPS_DIR, `${id}.json`), data);
+}
+
+function readNextSteps(id) {
+  return readJson(path.join(NEXT_STEPS_DIR, `${id}.json`), {});
 }
 
 
@@ -1065,6 +1135,74 @@ app.post('/logs/demo-sessions', (req, res) => {
   } catch {
     res.status(500).json({ error: 'failed to save' });
   }
+});
+
+// General logs
+app.get('/logs', (_req, res) => {
+  res.json(readLogs());
+});
+
+app.post('/logs', (req, res) => {
+  const entry = req.body || {};
+  appendLog({ ...entry, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Welcome page log
+app.post('/welcome-log', (req, res) => {
+  const { referrer = '', userAgent = '' } = req.body || {};
+  appendWelcomeLog({ id: uuidv4(), referrer, userAgent, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Feedback submission
+app.post('/feedback', (req, res) => {
+  const { type = 'general', message = '', sessionId = '' } = req.body || {};
+  if (!message) return res.status(400).json({ error: 'message required' });
+  appendFeedback({ id: uuidv4(), type, message, sessionId, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Analytics events
+app.get('/analytics', (_req, res) => {
+  res.json(readAnalytics());
+});
+
+app.post('/analytics', (req, res) => {
+  const { event = '', data = {} } = req.body || {};
+  if (!event) return res.status(400).json({ error: 'event required' });
+  appendAnalytics({ id: uuidv4(), event, data, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Simulation actions
+app.get('/simulation-actions/:id', (req, res) => {
+  res.json(readSimulationActions(req.params.id));
+});
+
+app.post('/simulation-actions/:id', (req, res) => {
+  const { action = '' } = req.body || {};
+  if (!action) return res.status(400).json({ error: 'action required' });
+  appendSimulationAction(req.params.id, { id: uuidv4(), action, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Next steps data
+app.get('/next-steps/:id', (req, res) => {
+  res.json(readNextSteps(req.params.id));
+});
+
+app.post('/next-steps/:id', (req, res) => {
+  saveNextSteps(req.params.id, req.body || {});
+  res.json({ success: true });
+});
+
+// Generate share token for a URL
+app.post('/share', (req, res) => {
+  const { url } = req.body || {};
+  if (!url) return res.status(400).json({ error: 'url required' });
+  const token = Buffer.from(url).toString('base64');
+  res.json({ token, shareUrl: `/share/${encodeURIComponent(token)}` });
 });
 
 // LibreTranslate - available languages
