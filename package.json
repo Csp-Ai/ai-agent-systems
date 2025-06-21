@@ -30,15 +30,18 @@
     "decision-support"
   ],
   "dependencies": {
+    "chalk": "^5.4.1",
     "cheerio": "^1.1.0",
     "clipboardy": "^4.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "firebase-admin": "^13.4.0",
     "html2pdf.js": "^0.10.3",
     "jszip": "^3.10.1",
     "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.1",
     "pdf-lib": "^1.17.1",
     "reactflow": "^11.11.4"
