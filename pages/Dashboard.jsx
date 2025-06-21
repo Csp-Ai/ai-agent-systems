@@ -13,7 +13,15 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [agents, setAgents] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [showMap, setShowMap] = useState(() => {
+    const saved = localStorage.getItem('showNeuralMap');
+    return saved ? JSON.parse(saved) : true;
+  });
   const [logs, setLogs] = useState({});
+
+  useEffect(() => {
+    localStorage.setItem('showNeuralMap', JSON.stringify(showMap));
+  }, [showMap]);
 
   useEffect(() => {
     fetch('/agents/agent-metadata.json')
@@ -56,7 +64,14 @@ export default function Dashboard() {
       <div className="flex-1 p-4 space-y-4">
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Agent Dashboard</h1>
-          <button onClick={toggleTheme} className="text-sm">Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode</button>
+          <div className="space-x-2">
+            <button onClick={toggleTheme} className="text-sm">
+              Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode
+            </button>
+            <button onClick={() => setShowMap(m => !m)} className="text-sm">
+              {showMap ? 'Hide' : 'Show'} Map
+            </button>
+          </div>
         </header>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
@@ -65,19 +80,21 @@ export default function Dashboard() {
             ))}
           </AnimatePresence>
         </div>
-        <NeuralAgentMap
-          agents={agentStates.map(a => ({
-            name: a.id,
-            icon: '🤖',
-            color:
-              a.status === 'running'
-                ? '#10b981'
-                : a.status === 'error'
-                ? '#ef4444'
-                : '#9ca3af'
-          }))}
-          logEvents={[]}
-        />
+        {showMap && (
+          <NeuralAgentMap
+            agents={agentStates.map(a => ({
+              name: a.id,
+              icon: '🤖',
+              color:
+                a.status === 'running'
+                  ? '#10b981'
+                  : a.status === 'error'
+                  ? '#ef4444'
+                  : '#9ca3af'
+            }))}
+            logEvents={[]}
+          />
+        )}
         <RealTimeLogConsole className="h-64" />
       </div>
     </div>
