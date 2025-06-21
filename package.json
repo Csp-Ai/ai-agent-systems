@@ -18,7 +18,8 @@
     "postdeploy:summary": "node scripts/postDeploySummary.js",
     "postdeploy:all": "node scripts/postDeploySummary.js",
     "process-log": "node agents/process-guardian-agent.js",
-    "cleanup:reports": "node functions/cleanupOldReports.js"
+    "cleanup:reports": "node functions/cleanupOldReports.js",
+    "agent:absorb-knowledge": "node agentLearningLoop.js"
   },
   "keywords": [
     "AI",
@@ -30,15 +31,19 @@
     "decision-support"
   ],
   "dependencies": {
+    "chalk": "^4.1.2",
     "cheerio": "^1.1.0",
     "clipboardy": "^4.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "firebase-admin": "^13.4.0",
     "html2pdf.js": "^0.10.3",
     "jszip": "^3.10.1",
+    "minimist": "^1.2.8",
     "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.1",
     "pdf-lib": "^1.17.1",
     "reactflow": "^11.11.4"

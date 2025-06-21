@@ -1,14 +1,14 @@
 # Deployment Architecture & Frontend Integration
 
 ## Overview
-The platform uses a Node.js + Express backend that can be deployed to Google Cloud Run using the `Dockerfile`. The same backend is also deployable to Firebase as Cloud Functions. A React landing page built with Vite and Tailwind CSS lives in `/frontend`. After `npm run build` the compiled assets are output to `/frontend/dist` and served by the Express app at the root route (`/`). The `/dashboard` directory contains a separate React app for governance dashboards. Its build outputs to `public/dashboard`.
+The platform uses a Node.js + Express backend that can be deployed to Google Cloud Run using the `Dockerfile`. The same backend is also deployable to Firebase as Cloud Functions. A React landing page built with Vite and Tailwind CSS lives in `/frontend`. After `npm run build` the compiled assets are output to `/frontend/build` and served by the Express app at the root route (`/`). The `/dashboard` directory contains a separate React app for governance dashboards. Its build outputs to `public/dashboard`.
 
 Deployments can be triggered manually or from GitHub Actions. After each deploy the `postDeploySummary.js` script collects commit info and writes `logs/summary.json` which is exposed via `/api/summary`.
 
 ## Folder Structure
 ```
 /frontend        → React landing page (Vite + Tailwind)
-/frontend/dist   → Built static assets served at /
+/frontend/build   → Built static assets served at /
 /dashboard       → Governance dashboard React app
 /functions       → Express API and agent loader
 /public          → Hosting assets including dashboard builds
