@@ -1,10 +1,13 @@
 import { useState } from 'react';
+import { logAgentEvent } from '../utils/analytics';
 
 export default function AgentDetailsModal({ agent, onClose, orgId }) {
   const [input, setInput] = useState('');
   const [response, setResponse] = useState(null);
   const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [simulated, setSimulated] = useState(false);
+  const openedAt = Date.now();
 
   const send = async () => {
     setLoading(true);
@@ -18,10 +21,19 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
       const data = await res.json();
       setResponse(data.agentResponse || data.error);
       setLog(data.log || []);
+      setSimulated(true);
+      logAgentEvent(agent, 'simulate', Date.now() - openedAt);
     } catch (err) {
       setResponse(err.message);
     }
     setLoading(false);
+  };
+
+  const handleClose = () => {
+    if (!simulated) {
+      logAgentEvent(agent, 'abandon', Date.now() - openedAt);
+    }
+    onClose();
   };
 
   return (
@@ -52,7 +64,7 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
             {loading ? 'Sending...' : 'Send'}
           </button>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex-1 bg-gray-300 hover:bg-gray-400 text-sm rounded dark:bg-gray-600 dark:hover:bg-gray-500"
           >
             Close

@@ -172,6 +172,8 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const ANALYTICS_AGENT_DIR = path.join(LOG_DIR, 'analytics', 'agents');
+const ANALYTICS_PAGE_DIR = path.join(LOG_DIR, 'analytics', 'pages');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -236,6 +238,51 @@ function ensureSimulationDir() {
   if (!fs.existsSync(SIMULATION_DIR)) {
     fs.mkdirSync(SIMULATION_DIR, { recursive: true });
   }
+}
+
+function ensureAnalyticsDirs() {
+  if (!fs.existsSync(ANALYTICS_AGENT_DIR)) {
+    fs.mkdirSync(ANALYTICS_AGENT_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(ANALYTICS_PAGE_DIR)) {
+    fs.mkdirSync(ANALYTICS_PAGE_DIR, { recursive: true });
+  }
+}
+
+function logAgentAnalytics(agentId, data) {
+  ensureAnalyticsDirs();
+  const date = new Date().toISOString().slice(0, 10);
+  const dir = path.join(ANALYTICS_AGENT_DIR, agentId);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${date}.json`);
+  let arr = [];
+  if (fs.existsSync(file)) {
+    try {
+      arr = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(arr)) arr = [];
+    } catch {
+      arr = [];
+    }
+  }
+  arr.push(data);
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+}
+
+function logPageTime(pathname, timeSpent) {
+  ensureAnalyticsDirs();
+  const date = new Date().toISOString().slice(0, 10);
+  const file = path.join(ANALYTICS_PAGE_DIR, `${date}.json`);
+  let arr = [];
+  if (fs.existsSync(file)) {
+    try {
+      arr = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(arr)) arr = [];
+    } catch {
+      arr = [];
+    }
+  }
+  arr.push({ timestamp: new Date().toISOString(), path: pathname, timeSpent });
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
 }
 
 function readSessionStatus() {
@@ -875,6 +922,67 @@ app.get('/strategy-board', async (req, res) => {
   }
 });
 
+function computeAnalytics() {
+  ensureAnalyticsDirs();
+  const viewCounts = {};
+  const useCaseCounts = {};
+  let total = 0;
+  let completed = 0;
+  const dropOffs = [];
+  if (!fs.existsSync(ANALYTICS_AGENT_DIR)) return { topAgents: [], topUseCases: [], completionRate: 0, dropOffs: [] };
+  for (const agentId of fs.readdirSync(ANALYTICS_AGENT_DIR)) {
+    const agentPath = path.join(ANALYTICS_AGENT_DIR, agentId);
+    if (!fs.statSync(agentPath).isDirectory()) continue;
+    for (const file of fs.readdirSync(agentPath).filter(f => f.endsWith('.json'))) {
+      let events = [];
+      try { events = JSON.parse(fs.readFileSync(path.join(agentPath, file), 'utf8')); } catch { events = []; }
+      for (const e of events) {
+        if (e.event === 'click') viewCounts[agentId] = (viewCounts[agentId] || 0) + 1;
+        if (e.useCase) useCaseCounts[e.useCase] = (useCaseCounts[e.useCase] || 0) + 1;
+        if (e.event === 'simulate') { total++; completed++; }
+        if (e.event === 'abandon') { total++; dropOffs.push(e.timestamp); }
+      }
+    }
+  }
+  const topAgents = Object.entries(viewCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const topUseCases = Object.entries(useCaseCounts).sort((a,b) => b[1]-a[1]).slice(0,5);
+  const completionRate = total ? completed/total : 0;
+  return { topAgents, topUseCases, completionRate, dropOffs };
+}
+
+app.get('/founder-insights', (req, res) => {
+  try {
+    const data = computeAnalytics();
+    res.send(`<!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Founder Insights</title>
+      <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-100 p-4">
+      <h1 class="text-2xl font-semibold mb-4">Founder Insights</h1>
+      <div class="space-y-8">
+        <canvas id="agents"></canvas>
+        <canvas id="usecases"></canvas>
+        <div id="completion" class="text-lg"></div>
+        <div id="drops" class="text-sm"></div>
+      </div>
+      <script>
+        const data = ${JSON.stringify(data)};
+        new Chart(document.getElementById('agents'), {type:'bar',data:{labels:data.topAgents.map(a=>a[0]),datasets:[{label:'Views',data:data.topAgents.map(a=>a[1]),backgroundColor:'rgba(59,130,246,0.7)'}]}});
+        new Chart(document.getElementById('usecases'), {type:'bar',data:{labels:data.topUseCases.map(a=>a[0]),datasets:[{label:'Visits',data:data.topUseCases.map(a=>a[1]),backgroundColor:'rgba(16,185,129,0.7)'}]}});
+        document.getElementById('completion').textContent = 'Simulation completion rate: ' + Math.round(data.completionRate*100) + '%';
+        document.getElementById('drops').textContent = 'Drop-offs: ' + data.dropOffs.join(', ');
+      </script>
+    </body>
+    </html>`);
+  } catch {
+    res.status(500).send('Failed to render insights');
+  }
+});
+
 // Return recent audit logs
 app.get('/audit', (req, res) => {
   try {
@@ -969,6 +1077,28 @@ app.post('/logs/simulations', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: 'failed to save' });
+  }
+});
+
+app.post('/analytics/agents', (req, res) => {
+  const { agentId, event, useCase, timeSpent } = req.body || {};
+  if (!agentId || !event) return res.status(400).json({ error: 'invalid payload' });
+  try {
+    logAgentAnalytics(agentId, { timestamp: new Date().toISOString(), event, useCase, timeSpent });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
+app.post('/analytics/pages', (req, res) => {
+  const { path: p, timeSpent } = req.body || {};
+  if (!p || typeof timeSpent !== 'number') return res.status(400).json({ error: 'invalid payload' });
+  try {
+    logPageTime(p, timeSpent);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed' });
   }
 });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { OrgProvider, useOrg } from './OrgContext';
 import AgentStatusTable from './components/AgentStatusTable';
 import MisalignmentProposalsPanel from './components/MisalignmentProposalsPanel';
@@ -8,13 +8,17 @@ import AgentHealthDashboard from './components/AgentHealthDashboard';
 import AgentGallery from './pages/AgentGallery';
 import AgentAdminConsole from './pages/AgentAdminConsole';
 import DepartmentRouter from './pages/DepartmentRouter';
+import { startPageTimer } from './utils/analytics';
 import './index.css';
 
-function Shell() {
+function RouterShell() {
+  const location = useLocation();
   const [dark, setDark] = useState(
     localStorage.getItem('theme') === 'dark'
   );
   const { orgId, setOrgId, orgs, loading } = useOrg();
+
+  useEffect(() => startPageTimer(location.pathname), [location.pathname]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -32,7 +36,7 @@ function Shell() {
   }
 
   return (
-    <Router basename="/dashboard">
+    <>
       <select
         value={orgId}
         onChange={e => setOrgId(e.target.value)}
@@ -71,6 +75,14 @@ function Shell() {
           </Routes>
         </main>
       </div>
+    </>
+  );
+}
+
+function Shell() {
+  return (
+    <Router basename="/dashboard">
+      <RouterShell />
     </Router>
   );
 }
