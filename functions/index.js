@@ -523,6 +523,19 @@ app.get('/logs/sessions/:id', (req, res) => {
   res.download(file);
 });
 
+// Return session log JSON for viewing in the dashboard
+app.get('/logs/sessions/:id/json', (req, res) => {
+  if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
+  const file = path.join(SESSION_LOG_DIR, `${req.params.id}.json`);
+  if (!fs.existsSync(file)) return res.status(404).json({ error: 'Not found' });
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    res.json(data);
+  } catch {
+    res.status(500).json({ error: 'Failed to read log' });
+  }
+});
+
 const STAGING_DIR = path.join(__dirname, '..', 'agents', 'staging');
 
 app.post('/submit-agent', upload.single('code'), async (req, res) => {
