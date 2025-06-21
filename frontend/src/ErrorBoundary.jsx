@@ -1,4 +1,5 @@
 import React from 'react';
+import LandingPage from './LandingPage.jsx';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -16,7 +17,7 @@ export default class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback || <div>Something went wrong.</div>;
+      return this.props.fallback || <LandingPage />;
     }
     return this.props.children;
   }

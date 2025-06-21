@@ -5,14 +5,18 @@ import { getFirestore } from 'firebase/firestore';
 let app = null;
 let db = {};
 
+function createStubAuth() {
+  return {
+    currentUser: null,
+    signInAnonymously: async () => {
+      console.warn('Firebase auth stub invoked: signInAnonymously');
+      return { user: null };
+    },
+  };
+}
+
 // Fallback auth stub so UI components can safely call auth methods
-let auth = {
-  currentUser: null,
-  signInAnonymously: async () => {
-    console.warn('Firebase auth stub invoked: signInAnonymously');
-    return { user: null };
-  },
-};
+let auth = createStubAuth();
 
 const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
 
@@ -31,7 +35,8 @@ if (apiKey) {
     console.error('Failed to initialize Firebase:', err);
   }
 } else {
-  console.warn('VITE_FIREBASE_API_KEY is not defined. Firebase not initialized.');
+  console.warn('VITE_FIREBASE_API_KEY is not defined. Using stub auth.');
+  auth = createStubAuth();
 }
 
-export { db, auth };
+export { db, auth, createStubAuth };
