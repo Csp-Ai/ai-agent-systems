@@ -186,6 +186,7 @@ const FEEDBACK_DIR = path.join(LOG_DIR, 'feedback');
 const ANALYTICS_FILE = path.join(LOG_DIR, 'analytics.json');
 const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
 const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
+const DASHBOARD_LOG_FILE = path.join(LOG_DIR, 'dashboard.json');
 
 
 // Ensure reports directory exists so generated PDFs can be served
@@ -423,6 +424,12 @@ function appendAnalytics(entry) {
   const list = readJson(ANALYTICS_FILE, []);
   list.push(entry);
   writeJson(ANALYTICS_FILE, list);
+}
+
+function appendDashboardLog(entry) {
+  const list = readJson(DASHBOARD_LOG_FILE, []);
+  list.push(entry);
+  writeJson(DASHBOARD_LOG_FILE, list);
 }
 
 function readAnalytics() {
@@ -1394,6 +1401,14 @@ app.post('/analytics', (req, res) => {
   const { event = '', data = {} } = req.body || {};
   if (!event) return res.status(400).json({ error: 'event required' });
   appendAnalytics({ id: uuidv4(), event, data, timestamp: new Date().toISOString() });
+  res.json({ success: true });
+});
+
+// Dashboard interaction logs
+app.post('/dashboard-log', (req, res) => {
+  const { event = '', data = {} } = req.body || {};
+  if (!event) return res.status(400).json({ error: 'event required' });
+  appendDashboardLog({ id: uuidv4(), event, data, timestamp: new Date().toISOString() });
   res.json({ success: true });
 });
 
