@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { auth } from '../firebase';
 
 export default function AgentDetailsModal({ agent, onClose, orgId }) {
   const [input, setInput] = useState('');
@@ -7,6 +8,10 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
   const [loading, setLoading] = useState(false);
 
   const send = async () => {
+    if (!auth.currentUser) {
+      alert('Please sign in to run this agent.');
+      return;
+    }
     setLoading(true);
     setResponse(null);
     try {
