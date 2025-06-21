@@ -15,7 +15,23 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const [agents, setAgents] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [showMap, setShowMap] = useState(() => {
+    const saved = localStorage.getItem('showNeuralMap');
+    return saved ? JSON.parse(saved) : true;
+  });
+  const [logs, setLogs] = useState({});
   const [logEvents, setLogEvents] = useState([]);
+
+  useEffect(() => {
+    localStorage.setItem('showNeuralMap', JSON.stringify(showMap));
+  }, [showMap]);
+
+  useEffect(() => {
+    fetch('/agents/agent-metadata.json')
+      .then(r => r.json())
+      .then(data => setAgents(Object.keys(data || {}).map(id => ({ id, ...data[id] }))))
+      .catch(() => setAgents([]));
+  }, []);
 
   useEffect(() => {
     const loadAgents = async () => {
@@ -28,6 +44,7 @@ export default function Dashboard() {
       }
     };
     loadAgents();
+  }, []);
   }, []);
 
   useEffect(() => {
@@ -64,7 +81,14 @@ export default function Dashboard() {
       <div className="p-4 space-y-4">
         <header className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-bold">Agent Dashboard</h1>
-          <button onClick={toggleTheme} className="text-sm">Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode</button>
+          <div className="space-x-2">
+            <button onClick={toggleTheme} className="text-sm">
+              Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode
+            </button>
+            <button onClick={() => setShowMap(m => !m)} className="text-sm">
+              {showMap ? 'Hide' : 'Show'} Map
+            </button>
+          </div>
         </header>
         <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
           <AnimatePresence>
@@ -73,21 +97,23 @@ export default function Dashboard() {
             ))}
           </AnimatePresence>
         </div>
-<div className="h-[500px]">
-  <NeuralAgentMap
-    agents={agentStates.map(a => ({
-      name: a.id,
-      icon: '🤖',
-      color:
-        a.status === 'running'
-          ? '#10b981'
-          : a.status === 'error'
-          ? '#ef4444'
-          : '#9ca3af'
-    }))}
-    logEvents={logEvents}
-  />
-</div>
+{showMap && (
+  <div className="h-[500px]">
+    <NeuralAgentMap
+      agents={agentStates.map(a => ({
+        name: a.id,
+        icon: '🤖',
+        color:
+          a.status === 'running'
+            ? '#10b981'
+            : a.status === 'error'
+            ? '#ef4444'
+            : '#9ca3af'
+      }))}
+      logEvents={logEvents}
+    />
+  </div>
+)}
 <RealTimeLogConsole className="h-64" />
       </div>
     </div>
