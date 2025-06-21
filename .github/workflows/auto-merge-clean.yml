@@ -1,0 +1,77 @@
+name: Auto Merge Clean
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GIT_TERMINAL_PROMPT: 0
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Detect production changes
+        id: changes
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }} --depth=1
+          CHANGED=$(git diff --name-only FETCH_HEAD HEAD)
+          echo "$CHANGED"
+          if ! echo "$CHANGED" | grep -E '^(frontend/|functions/|agents/|index.js|package.json|package-lock.json)' >/dev/null; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v3
+        if: steps.changes.outputs.skip != 'true'
+        with:
+          node-version: 18
+
+      - run: npm ci
+        if: steps.changes.outputs.skip != 'true'
+
+      - name: Stub Firebase env vars
+        if: steps.changes.outputs.skip != 'true'
+        run: |
+          echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY:-dummy}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN:-dummy}" >> $GITHUB_ENV
+          echo "VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID:-dummy}" >> $GITHUB_ENV
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+
+      - name: Lint
+        if: steps.changes.outputs.skip != 'true'
+        run: npx eslint . --if-present
+
+      - run: npm test --if-present
+        if: steps.changes.outputs.skip != 'true'
+
+  auto-merge:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      GIT_TERMINAL_PROMPT: 0
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm ci
+      - name: Check merge-base with main
+        id: mergebase
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "clean=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "clean=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Auto merge PR
+        if: steps.mergebase.outputs.clean == 'true'
+        run: gh pr merge ${{ github.event.pull_request.number }} --merge --auto
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
