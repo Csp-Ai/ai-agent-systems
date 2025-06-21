@@ -176,6 +176,7 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const USERS_DIR = path.join(__dirname, '..', 'users');
 const ANALYTICS_AGENT_DIR = path.join(LOG_DIR, 'analytics', 'agents');
 const ANALYTICS_PAGE_DIR = path.join(LOG_DIR, 'analytics', 'pages');
 const DEMO_SESSION_DIR = path.join(LOG_DIR, 'demo-sessions');
@@ -193,6 +194,10 @@ if (!fs.existsSync(REPORTS_DIR)) {
 
 if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(USERS_DIR)) {
+  fs.mkdirSync(USERS_DIR, { recursive: true });
 }
 
 if (!fs.existsSync(FEEDBACK_DIR)) {
@@ -627,6 +632,7 @@ app.use('/admin', express.static(path.join(__dirname, '..', 'frontend', 'admin')
 app.use('/client', express.static(path.join(__dirname, '..', 'frontend', 'client')));
 // Serve strategy board assets
 app.use('/board', express.static(path.join(__dirname, '..', 'frontend', 'board')));
+app.use('/signup', express.static(path.join(__dirname, '..', 'frontend', 'signup')));
 
 // Serve glossary assets
 app.use('/glossary-assets', express.static(path.join(__dirname, '..', 'frontend', 'glossary')));
@@ -1160,6 +1166,30 @@ app.get('/audit', (req, res) => {
     res.json(logs);
   } catch {
     res.status(500).json({ error: 'Failed to read audit logs' });
+  }
+});
+
+// Simple signup storing persona
+app.post('/api/signup', (req, res) => {
+  const { email, role } = req.body || {};
+  if (!email || !role) return res.status(400).json({ error: 'missing fields' });
+  const uid = crypto.randomBytes(8).toString('hex');
+  const dir = path.join(USERS_DIR, uid);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'persona.json'), JSON.stringify({ email, role }, null, 2));
+  res.json({ uid });
+});
+
+// Fetch persona info
+app.get('/api/persona', (req, res) => {
+  const { uid } = req.query;
+  if (!uid) return res.status(400).json({ error: 'uid required' });
+  const file = path.join(USERS_DIR, uid, 'persona.json');
+  try {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    res.json(data);
+  } catch {
+    res.status(404).json({ error: 'not found' });
   }
 });
 
