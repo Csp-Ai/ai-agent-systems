@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
 export default function AgentDetailsModal({ agent, onClose, orgId }) {
@@ -6,6 +6,24 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
   const [response, setResponse] = useState(null);
   const [log, setLog] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showPanel, setShowPanel] = useState(false);
+  const [sessionId] = useState(() => Math.random().toString(36).slice(2));
+
+  useEffect(() => {
+    if (response) setShowPanel(true);
+  }, [response]);
+
+  const trackAction = async action => {
+    try {
+      await fetch(`/logs/simulation-actions/${sessionId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      });
+    } catch {
+      // ignore
+    }
+  };
 
   const send = async () => {
     if (!auth.currentUser) {
@@ -73,6 +91,38 @@ export default function AgentDetailsModal({ agent, onClose, orgId }) {
             {log.join('\n')}
           </div>
         )}
+      </div>
+      <div
+        className={`fixed top-1/2 right-0 -translate-y-1/2 w-56 bg-white dark:bg-gray-800 border-l border-gray-300 dark:border-gray-700 shadow-lg p-4 transform transition-transform ${showPanel ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        <h4 className="font-semibold mb-2">Next Steps</h4>
+        <ul className="space-y-2 text-sm">
+          <li>
+            <button onClick={() => trackAction('save-pdf')} className="hover:underline">
+              📄 Save this output as a PDF
+            </button>
+          </li>
+          <li>
+            <button onClick={() => trackAction('email-self')} className="hover:underline">
+              📥 Email to myself
+            </button>
+          </li>
+          <li>
+            <button onClick={() => trackAction('add-workflow')} className="hover:underline">
+              🧩 Add to a Workflow
+            </button>
+          </li>
+          <li>
+            <button onClick={() => trackAction('send-agent')} className="hover:underline">
+              🛠 Send to another Agent
+            </button>
+          </li>
+          <li>
+            <button onClick={() => trackAction('feedback')} className="hover:underline">
+              📝 Leave feedback on this result
+            </button>
+          </li>
+        </ul>
       </div>
     </div>
   );

@@ -1,0 +1,27 @@
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 0px rgba(0, 255, 255, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(0, 255, 255, 0.9));
+  }
+}
+
+@keyframes arc-flow {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.drop-shadow-glow {
+  animation: pulse-glow 1.2s ease-in-out infinite;
+}
+
+.animate-arc {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: arc-flow 0.8s ease forwards;
+}
