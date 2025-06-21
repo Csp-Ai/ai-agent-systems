@@ -7,6 +7,8 @@ on:
 jobs:
   preview:
     runs-on: ubuntu-latest
+    env:
+      GIT_TERMINAL_PROMPT: 0
     steps:
       - uses: actions/checkout@v3
 
@@ -51,7 +53,7 @@ jobs:
           echo "preview_url=$(tail -n1 deploy-url.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Comment preview URL
-        if: steps.changes.outputs.skip != 'true'
+        if: steps.changes.outputs.skip != 'true' && steps.vercel.outcome == 'success'
         uses: actions/github-script@v7
         with:
           github-token: ${{ github.token }}

@@ -18,24 +18,24 @@ function createStubAuth() {
 // Fallback auth stub so UI components can safely call auth methods
 let auth = createStubAuth();
 
-const apiKey = import.meta.env.VITE_FIREBASE_API_KEY;
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+};
 
-if (apiKey) {
-  const firebaseConfig = {
-    apiKey,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  };
-
-  try {
+try {
+  if (firebaseConfig.apiKey) {
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     auth = getAuth(app);
-  } catch (err) {
-    console.error('Failed to initialize Firebase:', err);
+  } else {
+    console.warn('Firebase env vars missing; using stubbed client');
   }
-} else {
-  console.warn('VITE_FIREBASE_API_KEY is not defined. Using stub auth.');
+} catch (err) {
+  console.error('Failed to initialize Firebase:', err);
+  app = null;
+  db = {};
   auth = createStubAuth();
 }
 
