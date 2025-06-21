@@ -1,0 +1,4 @@
+.container {
+  background: radial-gradient(circle at center, rgba(0,0,0,0.6), rgba(0,0,0,0.9));
+  backdrop-filter: blur(2px);
+}
