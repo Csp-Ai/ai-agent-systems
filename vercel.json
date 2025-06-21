@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "cleanUrls": true,
   "builds": [
     {
       "src": "frontend/package.json",
@@ -7,10 +8,7 @@
       "config": { "distDir": "build" }
     }
   ],
-  "routes": [
-    { "src": "/(.*)", "dest": "/index.html" }
-  ],
   "rewrites": [
-    { "source": "/:path*", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
