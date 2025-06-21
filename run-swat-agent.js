@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const { execSync } = require('child_process');
+const chalk = require('chalk');
 
 // Ensure dotenv is installed
 let pkg;
@@ -23,7 +24,7 @@ require('dotenv').config();
 
 (async () => {
   try {
-    const { run } = await import('./core/agent-runner.js');
+    const { run } = require('./core/agent-runner.js');
     const vercelConfig = JSON.parse(fs.readFileSync('./vercel.json', 'utf8'));
 
     const args = process.argv.slice(2);
@@ -41,9 +42,9 @@ require('dotenv').config();
 
     const result = await run({ sessionId, registeredAgents: [], vercelConfig, envOverrides });
     console.log(JSON.stringify(result, null, 2));
-    console.log('✅ Vercel SWAT Agent completed successfully');
+    console.log(chalk.green('✅ SWAT Agent ran successfully and triggered recovery or status log'));
   } catch (err) {
-    console.error('❌ Vercel SWAT Agent failed with reason:', err.message || err);
+    console.error(chalk.red.bold('❌ SWAT Agent failed'), err.message || err);
     process.exitCode = 1;
   }
 })();
