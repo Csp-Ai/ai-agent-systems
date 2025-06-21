@@ -176,12 +176,15 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const ANALYTICS_AGENT_DIR = path.join(LOG_DIR, 'analytics', 'agents');
+const ANALYTICS_PAGE_DIR = path.join(LOG_DIR, 'analytics', 'pages');
 const DEMO_SESSION_DIR = path.join(LOG_DIR, 'demo-sessions');
 const FEEDBACK_FILE = path.join(LOG_DIR, 'feedback.json');
 const WELCOME_LOG_FILE = path.join(LOG_DIR, 'welcome.json');
 const ANALYTICS_FILE = path.join(LOG_DIR, 'analytics.json');
 const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
 const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
+
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -262,10 +265,57 @@ function ensureSimulationDir() {
   }
 }
 
+function ensureAnalyticsDirs() {
+  if (!fs.existsSync(ANALYTICS_AGENT_DIR)) {
+    fs.mkdirSync(ANALYTICS_AGENT_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(ANALYTICS_PAGE_DIR)) {
+    fs.mkdirSync(ANALYTICS_PAGE_DIR, { recursive: true });
+  }
+}
+
+function logAgentAnalytics(agentId, data) {
+  ensureAnalyticsDirs();
+  const date = new Date().toISOString().slice(0, 10);
+  const dir = path.join(ANALYTICS_AGENT_DIR, agentId);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${date}.json`);
+  let arr = [];
+  if (fs.existsSync(file)) {
+    try {
+      arr = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(arr)) arr = [];
+    } catch {
+      arr = [];
+    }
+  }
+  arr.push(data);
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+}
+
+function logPageTime(pathname, timeSpent) {
+  ensureAnalyticsDirs();
+  const date = new Date().toISOString().slice(0, 10);
+  const file = path.join(ANALYTICS_PAGE_DIR, `${date}.json`);
+  let arr = [];
+  if (fs.existsSync(file)) {
+    try {
+      arr = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(arr)) arr = [];
+    } catch {
+      arr = [];
+    }
+  }
+  arr.push({ timestamp: new Date().toISOString(), path: pathname, timeSpent });
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
+}
+
 function ensureDemoSessionDir() {
   if (!fs.existsSync(DEMO_SESSION_DIR)) {
     fs.mkdirSync(DEMO_SESSION_DIR, { recursive: true });
   }
+}
+
 }
 
 function readSessionStatus() {
@@ -1013,31 +1063,93 @@ app.get('/strategy-board', async (req, res) => {
   }
 });
 
-// Agent glossary page
-app.get('/glossary', (req, res) => {
-  const list = Object.entries(agentMetadata).map(([id, meta]) => ({
-    id,
-    name: meta.name,
-    description: meta.description,
-    category: meta.category
-  }));
-  res.send(`<!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Agent Glossary</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
-  </head>
-  <body class="bg-gray-100">
-    <div id="root"></div>
-    <script>window.agentData = ${JSON.stringify(list)};</script>
-    <script type="text/babel" src="/glossary-assets/Glossary.jsx"></script>
-    <script type="text/babel">ReactDOM.render(<Glossary agents={window.agentData} />, document.getElementById('root'));</script>
-  </body>
-  </html>`);
+function computeInsights() {
+  ensureAnalyticsDirs();
+  const orgMap = {};
+  if (!fs.existsSync(ANALYTICS_AGENT_DIR)) return { topicScores: [], completionRate: 0, dropoffs: [] };
+
+  const orgs = fs.readdirSync(ANALYTICS_AGENT_DIR);
+  for (const orgId of orgs) {
+    const dir = path.join(ANALYTICS_AGENT_DIR, orgId);
+    if (!fs.statSync(dir).isDirectory()) continue;
+
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      const fullPath = path.join(dir, file);
+      const json = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+      for (const entry of json) {
+        if (!orgMap[orgId]) orgMap[orgId] = [];
+        orgMap[orgId].push(entry);
+      }
+    }
+  }
+
+  const topicCounts = {};
+  const dropoffs = [];
+
+  Object.entries(orgMap).forEach(([orgId, logs]) => {
+    logs.forEach(({ topic, completed }) => {
+      if (!topicCounts[topic]) topicCounts[topic] = 0;
+      topicCounts[topic]++;
+      if (!completed) dropoffs.push(topic);
+    });
+  });
+
+  const topicScores = Object.entries(topicCounts).map(([topic, count]) => ({ topic, count }));
+  const completionRate = topicScores.length
+    ? 1 - dropoffs.length / topicScores.reduce((sum, t) => sum + t.count, 0)
+    : 0;
+
+  return { topicScores, completionRate, dropoffs };
+}
+
+app.get('/founder-insights', (req, res) => {
+  try {
+    const data = computeInsights();
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Founder Insights</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" />
+      </head>
+      <body class="p-8 bg-white text-black">
+        <h1 class="text-3xl mb-4 font-bold">📊 Founder Insights</h1>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <h2 class="text-xl font-semibold">Topic Scores</h2>
+            <canvas id="topicChart"></canvas>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold">Dropoffs</h2>
+            <p>${data.dropoffs.join(', ')}</p>
+            <h2 class="text-xl font-semibold mt-4">Completion Rate</h2>
+            <p>${(data.completionRate * 100).toFixed(2)}%</p>
+          </div>
+        </div>
+        <script>
+          const ctx = document.getElementById('topicChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ${JSON.stringify(data.topicScores.map(t => t.topic))},
+              datasets: [{
+                label: 'Count',
+                data: ${JSON.stringify(data.topicScores.map(t => t.count))},
+                backgroundColor: 'rgba(54, 162, 235, 0.7)'
+              }]
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    res.status(500).send("Failed to render insights");
+  }
+});
+
 });
 
 // Return recent audit logs
@@ -1137,6 +1249,29 @@ app.post('/logs/simulations', async (req, res) => {
   }
 });
 
+// Agent analytics logging
+app.post('/analytics/agents', (req, res) => {
+  const { agentId, event, useCase, timeSpent } = req.body || {};
+  if (!agentId || !event) return res.status(400).json({ error: 'invalid payload' });
+  try {
+    logAgentAnalytics(agentId, { timestamp: new Date().toISOString(), event, useCase, timeSpent });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
+app.post('/analytics/pages', (req, res) => {
+  const { path: p, timeSpent } = req.body || {};
+  if (!p || typeof timeSpent !== 'number') return res.status(400).json({ error: 'invalid payload' });
+  try {
+    logPageTime(p, timeSpent);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 // Feedback submission via authenticated route
 app.post('/submit-feedback', async (req, res) => {
   const uid = await verifyUser(req);
@@ -1156,6 +1291,7 @@ app.post('/submit-feedback', async (req, res) => {
   }
 });
 
+// Simulation logs
 app.post('/logs/simulation-actions/:id', (req, res) => {
   const { id } = req.params;
   const { action } = req.body || {};
@@ -1168,6 +1304,7 @@ app.post('/logs/simulation-actions/:id', (req, res) => {
   }
 });
 
+// Demo agents listing
 app.get('/demo-agents', (_req, res) => {
   const list = Object.entries(agentMetadata)
     .filter(([, m]) => m.visibleToDemo)
@@ -1175,6 +1312,7 @@ app.get('/demo-agents', (_req, res) => {
   res.json(list);
 });
 
+// Demo session logging
 app.post('/logs/demo-sessions', (req, res) => {
   const { workflow = '', inputs = {} } = req.body || {};
   if (!workflow) return res.status(400).json({ error: 'workflow required' });
@@ -1197,14 +1335,14 @@ app.post('/logs', (req, res) => {
   res.json({ success: true });
 });
 
-// Welcome page log
+// Welcome log
 app.post('/welcome-log', (req, res) => {
   const { referrer = '', userAgent = '' } = req.body || {};
   appendWelcomeLog({ id: uuidv4(), referrer, userAgent, timestamp: new Date().toISOString() });
   res.json({ success: true });
 });
 
-// Anonymous feedback (non-authenticated fallback)
+// Anonymous feedback
 app.post('/feedback', (req, res) => {
   const { type = 'general', message = '', sessionId = '' } = req.body || {};
   if (!message) return res.status(400).json({ error: 'message required' });
@@ -1236,7 +1374,7 @@ app.post('/simulation-actions/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// Next steps data
+// Next steps
 app.get('/next-steps/:id', (req, res) => {
   res.json(readNextSteps(req.params.id));
 });
@@ -1246,7 +1384,7 @@ app.post('/next-steps/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// Generate share token for a URL
+// Share token
 app.post('/share', (req, res) => {
   const { url } = req.body || {};
   if (!url) return res.status(400).json({ error: 'url required' });

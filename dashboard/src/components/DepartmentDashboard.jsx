@@ -3,6 +3,7 @@ import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestor
 import AgentDetailsModal from './AgentDetailsModal';
 import { db } from '../firebase';
 import { useOrg } from '../OrgContext';
+import { logAgentEvent } from '../utils/analytics';
 
 export default function DepartmentDashboard({ department }) {
   const [agents, setAgents] = useState([]);
@@ -57,8 +58,8 @@ export default function DepartmentDashboard({ department }) {
                 <p className="text-sm text-gray-600 dark:text-gray-400">{a.description}</p>
               </div>
               <div className="p-3 flex gap-2">
-                <button onClick={() => setActive(a)} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded">Run</button>
-                <button onClick={() => setActive(a)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-sm rounded dark:bg-gray-600 dark:hover:bg-gray-500">Logs</button>
+                <button onClick={() => { logAgentEvent(a, 'click'); setActive(a); }} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded">Run</button>
+                <button onClick={() => { logAgentEvent(a, 'click'); setActive(a); }} className="flex-1 bg-gray-300 hover:bg-gray-400 text-sm rounded dark:bg-gray-600 dark:hover:bg-gray-500">Logs</button>
               </div>
             </div>
           ))}
