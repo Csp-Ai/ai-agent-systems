@@ -18,6 +18,7 @@ const {
   appendAuditLog,
 } = require('./auditLogger');
 const runHealthChecks = require('./healthCheck');
+const { appendUsageLog } = require('./usageLogger');
 const { reportSOP } = require('./sopReporter');
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
@@ -333,7 +334,7 @@ app.use((req, res, next) => {
 // Object to hold loaded agents keyed by file name (without extension)
 let registeredAgents = getRegisteredAgents();
 
-async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step) {
+async function executeAgent(agentName, input, results = {}, stack = [], sessionId, step, orgId, userId) {
   if (results[agentName]) return results[agentName];
 
   if (stack.includes(agentName)) {
@@ -352,7 +353,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
 
   const depResults = {};
   for (const dep of metadata.dependsOn || []) {
-    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step);
+    depResults[dep] = await executeAgent(dep, input, results, stack, sessionId, step, orgId, userId);
   }
 
   const expectedInputs = metadata.inputs || {};
@@ -367,6 +368,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
   }
 
   const startTime = Date.now();
+  const inputHash = crypto.createHash('sha256').update(JSON.stringify(input)).digest('hex');
   let result;
   try {
     if (sessionId !== undefined && step !== undefined) {
@@ -401,6 +403,13 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       input,
       output: result
     });
+    appendUsageLog(orgId, agentName, {
+      timestamp: new Date().toISOString(),
+      userId,
+      inputHash,
+      status: 'success',
+      duration: Date.now() - startTime
+    });
     logAgentAction({ sessionId, agent: agentName, input, result });
 
     results[agentName] = result;
@@ -430,6 +439,13 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       agent: agentName,
       input,
       error: err.message
+    });
+    appendUsageLog(orgId, agentName, {
+      timestamp: new Date().toISOString(),
+      userId,
+      inputHash,
+      status: 'error',
+      duration: Date.now() - startTime
     });
     logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
     stack.pop();
@@ -578,7 +594,7 @@ async function handleExecuteAgent(req, res) {
 
   try {
     const results = {};
-    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step);
+    let finalResult = await executeAgent(agentName, input, results, [], sessionId, step, orgId, uid);
     if (locale) {
       finalResult = await translateOutput(finalResult, locale);
       results[agentName] = finalResult;
