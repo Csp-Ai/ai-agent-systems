@@ -75,6 +75,7 @@ function App() {
           <WelcomeOverlay onDismiss={dismissWelcome} />
         )}
       </AnimatePresence>
+
     </>
   );
 }
