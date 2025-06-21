@@ -24,6 +24,17 @@ export default function AgentsGallery() {
     loadAgents();
   }, []);
 
+  useEffect(() => {
+    if (!agents.length) return;
+    const params = new URLSearchParams(window.location.search);
+    const preset = params.get('agents');
+    if (preset) {
+      const ids = preset.split(',');
+      const preSelected = agents.filter(a => ids.includes(a.id));
+      setSelectedAgents(preSelected);
+    }
+  }, [agents]);
+
   const runDemo = async () => {
     if (!selectedAgent) return;
     const res = await fetch("/run-agent", {
