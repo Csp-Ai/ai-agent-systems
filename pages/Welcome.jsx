@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import AgentCard from '../components/AgentCard';
 import LiveAgentGraph from '../components/LiveAgentGraph';
 import AgentCluster from '../components/AgentCluster';
@@ -14,9 +14,21 @@ const pricing = [
 ];
 
 const testimonials = [
-  { quote: 'These agents saved us countless hours!', author: 'Alex P.' },
-  { quote: 'Insightful analytics and easy to use.', author: 'Jamie L.' },
-  { quote: 'A must-have for automation projects.', author: 'Morgan K.' }
+  {
+    quote: 'These agents saved us countless hours!',
+    author: 'Alex P.',
+    avatar: 'https://i.pravatar.cc/80?img=11'
+  },
+  {
+    quote: 'Insightful analytics and easy to use.',
+    author: 'Jamie L.',
+    avatar: 'https://i.pravatar.cc/80?img=12'
+  },
+  {
+    quote: 'A must-have for automation projects.',
+    author: 'Morgan K.',
+    avatar: 'https://i.pravatar.cc/80?img=13'
+  }
 ];
 
 const heroAgents = [
@@ -24,6 +36,49 @@ const heroAgents = [
   { name: 'swat-agent', icon: '⚙️', color: '#0ea5e9' },
   { name: 'data-agent', icon: '📊', color: '#10b981' }
 ];
+
+const TestimonialCarousel = () => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setIndex(i => (i + 1) % testimonials.length);
+    }, 6000);
+    return () => clearInterval(id);
+  }, []);
+
+  const variants = {
+    enter: { x: 300, opacity: 0 },
+    center: { x: 0, opacity: 1 },
+    exit: { x: -300, opacity: 0 }
+  };
+
+  return (
+    <div className="relative overflow-hidden h-60">
+      <AnimatePresence initial={false}>
+        <motion.div
+          key={index}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ type: 'tween', duration: 0.6 }}
+          className="absolute inset-0 flex items-center justify-center px-6"
+        >
+          <div className="bg-white/10 rounded-xl p-6 text-center space-y-4">
+            <img
+              src={testimonials[index].avatar}
+              alt={testimonials[index].author}
+              className="w-16 h-16 rounded-full mx-auto"
+            />
+            <p className="italic">{testimonials[index].quote}</p>
+            <p className="font-semibold">- {testimonials[index].author}</p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
 
 const Welcome = () => {
   const { theme, toggleTheme } = useTheme();
@@ -96,8 +151,8 @@ const Welcome = () => {
       <section className="mt-20">
         <PricingTiers />
       </section>
-      <section className="py-12 text-center opacity-80">
-        <p>"These agents saved us countless hours!" - Happy Customer</p>
+      <section className="my-24 px-4 max-w-5xl mx-auto">
+        <TestimonialCarousel />
       </section>
     </div>
   );
