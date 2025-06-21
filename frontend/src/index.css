@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
 @keyframes arc-draw {
   from { stroke-dashoffset: 100; }
   to { stroke-dashoffset: 0; }
