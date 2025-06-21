@@ -2,7 +2,11 @@ name: Verify and Auto Merge
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   verify:
@@ -44,8 +48,9 @@ jobs:
       - run: npm test --if-present
         if: steps.changes.outputs.skip != 'true'
       - run: node scripts/check-route-collisions.js
-      - name: Auto merge
+      - name: Enable auto-merge
         if: ${{ github.event.pull_request.mergeable_state == 'clean' }}
-        run: gh pr merge ${{ github.event.pull_request.number }} --merge --auto
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          merge-method: merge
