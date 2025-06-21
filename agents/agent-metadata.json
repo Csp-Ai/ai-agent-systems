@@ -118,7 +118,7 @@
     ],
     "lifecycle": "incubation",
     "locale": "en-US",
-    "misaligned": false,
+    "misaligned": false
   },
   "mentor-agent": {
     "name": "Mentor Agent",

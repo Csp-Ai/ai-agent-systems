@@ -182,6 +182,7 @@ const ANALYTICS_PAGE_DIR = path.join(LOG_DIR, 'analytics', 'pages');
 const DEMO_SESSION_DIR = path.join(LOG_DIR, 'demo-sessions');
 const FEEDBACK_FILE = path.join(LOG_DIR, 'feedback.json');
 const WELCOME_LOG_FILE = path.join(LOG_DIR, 'welcome.json');
+const FEEDBACK_DIR = path.join(LOG_DIR, 'feedback');
 const ANALYTICS_FILE = path.join(LOG_DIR, 'analytics.json');
 const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
 const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
@@ -212,7 +213,6 @@ if (!fs.existsSync(NEXT_STEPS_DIR)) {
   fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
 }
 
-}
 
 // Ensure log directory and file exist
 function ensureLogFile() {
@@ -321,7 +321,6 @@ function ensureDemoSessionDir() {
   }
 }
 
-}
 
 function readSessionStatus() {
   ensureSessionFiles();
@@ -823,15 +822,14 @@ async function handleSendReport(req, res) {
     }
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      host: process.env.SMTP_HOST || "",
+      port: parseInt(process.env.SMTP_PORT || "587", 10),
       secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || "",
+        pass: process.env.SMTP_PASS || "",
       },
     });
-
     await transporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to: email,
@@ -959,12 +957,12 @@ app.post('/client/send-link', async (req, res) => {
     const link = `${req.protocol}://${req.get('host')}/client/login?token=${token}`;
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      host: process.env.SMTP_HOST || "",
+      port: parseInt(process.env.SMTP_PORT || "587", 10),
       secure: false,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER || "",
+        pass: process.env.SMTP_PASS || "",
       },
     });
 
@@ -1156,7 +1154,6 @@ app.get('/founder-insights', (req, res) => {
   }
 });
 
-});
 
 // Return recent audit logs
 app.get('/audit', (req, res) => {
