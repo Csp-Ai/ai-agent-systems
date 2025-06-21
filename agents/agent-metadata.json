@@ -25,6 +25,7 @@
       "es",
       "fr"
     ],
+    "public": true,
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
@@ -85,6 +86,7 @@
       "es",
       "fr"
     ],
+    "public": true,
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false,
@@ -138,6 +140,7 @@
       "es",
       "fr"
     ],
+    "public": true,
     "lifecycle": "production",
     "locale": "en-US",
     "misaligned": false

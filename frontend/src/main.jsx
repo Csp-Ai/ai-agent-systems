@@ -9,7 +9,7 @@ import UseCaseSelector from './UseCaseSelector.jsx';
 import WelcomeOverlay from './WelcomeOverlay.jsx';
 import WelcomeExperience from './WelcomeExperience.jsx';
 import OnboardingOverlay from './OnboardingOverlay.jsx';
-import AgentsGallery from '../AgentsGallery.jsx';
+import Gallery from './Gallery.jsx'; // <- from your branch
 import AdminDashboard from '../AdminDashboard.jsx';
 
 const path = window.location.pathname;
@@ -49,7 +49,7 @@ function App() {
   if (isDemo) {
     content = <DemoPage />;
   } else if (isGallery) {
-    content = <AgentsGallery />;
+    content = <Gallery />; // <-- your public preview gallery here
   } else if (isUseCases) {
     content = <UseCaseSelector />;
   } else if (isDashboard) {
@@ -75,7 +75,6 @@ function App() {
           <WelcomeOverlay onDismiss={dismissWelcome} />
         )}
       </AnimatePresence>
-
     </>
   );
 }
