@@ -200,6 +200,8 @@ if (!fs.existsSync(NEXT_STEPS_DIR)) {
   fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
 }
 
+}
+
 // Ensure log directory and file exist
 function ensureLogFile() {
   if (!fs.existsSync(LOG_DIR)) {
@@ -353,11 +355,13 @@ function readAnalytics() {
   return readJson(ANALYTICS_FILE, []);
 }
 
-function appendSimulationAction(id, entry) {
-  if (!fs.existsSync(SIM_ACTIONS_DIR)) fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
+function appendSimulationAction(id, action) {
+  if (!fs.existsSync(SIM_ACTIONS_DIR)) {
+    fs.mkdirSync(SIM_ACTIONS_DIR, { recursive: true });
+  }
   const file = path.join(SIM_ACTIONS_DIR, `${id}.json`);
   const list = readJson(file, []);
-  list.push(entry);
+  list.push({ timestamp: new Date().toISOString(), action });
   writeJson(file, list);
 }
 
@@ -367,12 +371,16 @@ function readSimulationActions(id) {
 }
 
 function saveNextSteps(id, data) {
-  if (!fs.existsSync(NEXT_STEPS_DIR)) fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
+  if (!fs.existsSync(NEXT_STEPS_DIR)) {
+    fs.mkdirSync(NEXT_STEPS_DIR, { recursive: true });
+  }
   writeJson(path.join(NEXT_STEPS_DIR, `${id}.json`), data);
 }
 
 function readNextSteps(id) {
   return readJson(path.join(NEXT_STEPS_DIR, `${id}.json`), {});
+}
+
 }
 
 
@@ -1119,6 +1127,18 @@ app.post('/logs/simulations', async (req, res) => {
   }
 });
 
+app.post('/logs/simulation-actions/:id', (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body || {};
+  if (!action) return res.status(400).json({ error: 'invalid payload' });
+  try {
+    appendSimulationAction(id, { timestamp: new Date().toISOString(), action });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed to save simulation action' });
+  }
+});
+
 app.get('/demo-agents', (_req, res) => {
   const list = Object.entries(agentMetadata)
     .filter(([, m]) => m.visibleToDemo)
@@ -1131,6 +1151,12 @@ app.post('/logs/demo-sessions', (req, res) => {
   if (!workflow) return res.status(400).json({ error: 'workflow required' });
   try {
     saveDemoSession({ workflow, inputs, timestamp: new Date().toISOString() });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'failed to save' });
+  }
+});
+
     res.json({ success: true });
   } catch {
     res.status(500).json({ error: 'failed to save' });
@@ -1200,10 +1226,7 @@ app.post('/next-steps/:id', (req, res) => {
 // Generate share token for a URL
 app.post('/share', (req, res) => {
   const { url } = req.body || {};
-  if (!url) return res.status(400).json({ error: 'url required' });
-  const token = Buffer.from(url).toString('base64');
-  res.json({ token, shareUrl: `/share/${encodeURIComponent(token)}` });
-});
+  if (!url) return res.status(400).json({ error:
 
 // LibreTranslate - available languages
 app.get('/locales', async (req, res) => {
