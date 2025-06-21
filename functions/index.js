@@ -490,6 +490,9 @@ app.use('/client', express.static(path.join(__dirname, '..', 'frontend', 'client
 // Serve strategy board assets
 app.use('/board', express.static(path.join(__dirname, '..', 'frontend', 'board')));
 
+// Serve glossary assets
+app.use('/glossary-assets', express.static(path.join(__dirname, '..', 'frontend', 'glossary')));
+
 // Serve generated PDF reports from logs/reports
 app.use('/reports', express.static('logs/reports'));
 
@@ -920,6 +923,33 @@ app.get('/strategy-board', async (req, res) => {
   } catch (err) {
     res.status(500).send('Failed to render board');
   }
+});
+
+// Agent glossary page
+app.get('/glossary', (req, res) => {
+  const list = Object.entries(agentMetadata).map(([id, meta]) => ({
+    id,
+    name: meta.name,
+    description: meta.description,
+    category: meta.category
+  }));
+  res.send(`<!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Agent Glossary</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100">
+    <div id="root"></div>
+    <script>window.agentData = ${JSON.stringify(list)};</script>
+    <script type="text/babel" src="/glossary-assets/Glossary.jsx"></script>
+    <script type="text/babel">ReactDOM.render(<Glossary agents={window.agentData} />, document.getElementById('root'));</script>
+  </body>
+  </html>`);
 });
 
 // Return recent audit logs
