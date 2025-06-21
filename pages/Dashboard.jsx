@@ -20,11 +20,12 @@ export default function Dashboard() {
     return saved ? JSON.parse(saved) : true;
   });
   const [logs, setLogs] = useState({});
-  const [logEvents, setLogEvents] = useState([]);
+const [logEvents, setLogEvents] = useState([]);
+const [decisionLogs, setDecisionLogs] = useState([]);
 
-  useEffect(() => {
-    localStorage.setItem('showNeuralMap', JSON.stringify(showMap));
-  }, [showMap]);
+useEffect(() => {
+  localStorage.setItem('showNeuralMap', JSON.stringify(showMap));
+}, [showMap]);
 
   useEffect(() => {
     fetch('/agents/agent-metadata.json')
@@ -48,6 +49,12 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+  useEffect(() => {
+    fetch('/logs/agent-decisions')
+      .then(r => r.json())
+      .then(data => setDecisionLogs(Array.isArray(data) ? data : []))
+      .catch(() => setDecisionLogs([]));
+
     const loadLogs = async () => {
       try {
         const res = await fetch('/api/dashboard-logs');
@@ -60,8 +67,15 @@ export default function Dashboard() {
     loadLogs();
   }, []);
 
-  const agentStates = agents.map(id => {
-    const log = logEvents.find(l => l.agent === id) || {};
+  const agentStates = agents.map(agent => {
+    const log = logEvents.find(l => l.agent === agent.id) || {};
+    let status = 'idle';
+    if (log.timestamp) {
+      const age = Date.now() - new Date(log.timestamp).getTime();
+      status = log.error ? 'error' : age < 5 * 60 * 1000 ? 'running' : 'idle';
+    }
+    return { id: agent.id, status, log };
+  });
     let status = 'idle';
     if (log.timestamp) {
       const age = Date.now() - new Date(log.timestamp).getTime();
@@ -110,7 +124,10 @@ export default function Dashboard() {
             ? '#ef4444'
             : '#9ca3af'
       }))}
-      logEvents={logEvents}
+      logEvents={[
+        ...logEvents.map(l => `${l.agent} - ${l.error ? 'error' : 'running'}`),
+        ...decisionLogs.map(d => `${d.agent} - ${d.action} (${d.context})`)
+      ]}
     />
   </div>
 )}
