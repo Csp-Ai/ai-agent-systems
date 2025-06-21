@@ -174,6 +174,7 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const DEMO_SESSION_DIR = path.join(LOG_DIR, 'demo-sessions');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -240,6 +241,12 @@ function ensureSimulationDir() {
   }
 }
 
+function ensureDemoSessionDir() {
+  if (!fs.existsSync(DEMO_SESSION_DIR)) {
+    fs.mkdirSync(DEMO_SESSION_DIR, { recursive: true });
+  }
+}
+
 function readSessionStatus() {
   ensureSessionFiles();
   try {
@@ -288,6 +295,12 @@ function saveSimulationLog(orgId, timestamp, data) {
     fs.mkdirSync(dir, { recursive: true });
   }
   const file = path.join(dir, `${timestamp}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function saveDemoSession(data) {
+  ensureDemoSessionDir();
+  const file = path.join(DEMO_SESSION_DIR, `${Date.now()}.json`);
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
@@ -973,6 +986,24 @@ app.post('/logs/simulations', async (req, res) => {
     saveSimulationLog(orgId || 'default', timestamp, { agents, log });
     res.json({ success: true });
   } catch (err) {
+    res.status(500).json({ error: 'failed to save' });
+  }
+});
+
+app.get('/demo-agents', (_req, res) => {
+  const list = Object.entries(agentMetadata)
+    .filter(([, m]) => m.visibleToDemo)
+    .map(([id, m]) => ({ id, name: m.name, description: m.description }));
+  res.json(list);
+});
+
+app.post('/logs/demo-sessions', (req, res) => {
+  const { workflow = '', inputs = {} } = req.body || {};
+  if (!workflow) return res.status(400).json({ error: 'workflow required' });
+  try {
+    saveDemoSession({ workflow, inputs, timestamp: new Date().toISOString() });
+    res.json({ success: true });
+  } catch {
     res.status(500).json({ error: 'failed to save' });
   }
 });

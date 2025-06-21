@@ -28,7 +28,8 @@
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "report-generator-agent": {
     "name": "Report Generator",
@@ -58,7 +59,8 @@
     "lifecycle": "incubation",
     "status": "planned",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "website-scanner-agent": {
     "name": "Website Scanner Agent",
@@ -85,7 +87,8 @@
     ],
     "lifecycle": "production",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "data-analyst-agent": {
     "name": "Data Analyst Agent",
@@ -113,7 +116,8 @@
     ],
     "lifecycle": "incubation",
     "locale": "en-US",
-    "misaligned": false
+    "misaligned": false,
+    "visibleToDemo": true
   },
   "mentor-agent": {
     "name": "Mentor Agent",
