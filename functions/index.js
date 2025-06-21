@@ -172,6 +172,7 @@ const SESSION_STATUS_FILE = path.join(LOG_DIR, 'sessionStatus.json');
 const SESSION_LOG_DIR = path.join(LOG_DIR, 'sessions');
 const REPORTS_DIR = path.join(LOG_DIR, 'reports');
 const SIMULATION_DIR = path.join(LOG_DIR, 'simulations');
+const SIM_ACTION_DIR = path.join(LOG_DIR, 'simulation-actions');
 
 // Ensure reports directory exists so generated PDFs can be served
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -180,6 +181,10 @@ if (!fs.existsSync(REPORTS_DIR)) {
 
 if (!fs.existsSync(SIMULATION_DIR)) {
   fs.mkdirSync(SIMULATION_DIR, { recursive: true });
+}
+
+if (!fs.existsSync(SIM_ACTION_DIR)) {
+  fs.mkdirSync(SIM_ACTION_DIR, { recursive: true });
 }
 
 // Ensure log directory and file exist
@@ -287,6 +292,25 @@ function saveSimulationLog(orgId, timestamp, data) {
   }
   const file = path.join(dir, `${timestamp}.json`);
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function saveSimulationAction(sessionId, action) {
+  if (!sessionId || !action) return;
+  if (!fs.existsSync(SIM_ACTION_DIR)) {
+    fs.mkdirSync(SIM_ACTION_DIR, { recursive: true });
+  }
+  const file = path.join(SIM_ACTION_DIR, `${sessionId}.json`);
+  let arr = [];
+  if (fs.existsSync(file)) {
+    try {
+      arr = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(arr)) arr = [];
+    } catch {
+      arr = [];
+    }
+  }
+  arr.push({ timestamp: new Date().toISOString(), action });
+  fs.writeFileSync(file, JSON.stringify(arr, null, 2));
 }
 
 
@@ -968,6 +992,18 @@ app.post('/logs/simulations', async (req, res) => {
     saveSimulationLog(orgId || 'default', timestamp, { agents, log });
     res.json({ success: true });
   } catch (err) {
+    res.status(500).json({ error: 'failed to save' });
+  }
+});
+
+app.post('/logs/simulation-actions/:id', (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body || {};
+  if (!action) return res.status(400).json({ error: 'invalid payload' });
+  try {
+    saveSimulationAction(id, action);
+    res.json({ success: true });
+  } catch {
     res.status(500).json({ error: 'failed to save' });
   }
 });
