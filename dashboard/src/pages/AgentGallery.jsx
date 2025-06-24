@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import AgentDetailsModal from '../components/AgentDetailsModal';
 import AddAgentForm from '../components/AddAgentForm';
@@ -10,6 +11,7 @@ export default function AgentGallery() {
   const [active, setActive] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const { orgId } = useOrg();
+  const prefersReduced = useReducedMotion();
 
   const load = () => {
     fetch('/agents/agent-metadata.json')
@@ -38,9 +40,11 @@ export default function AgentGallery() {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {agents.map(a => (
-          <div
+          <motion.div
             key={a.id}
-            className="rounded border bg-slate-800 text-white shadow-md hover:scale-105 transition-transform"
+            whileHover={prefersReduced ? {} : { scale: 1.05, rotate: -1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            className="rounded border bg-slate-800 text-white shadow-md"
           >
             <div className="p-4 flex items-start">
               <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
@@ -77,7 +81,7 @@ export default function AgentGallery() {
                 Test Agent
               </button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
       {active && (

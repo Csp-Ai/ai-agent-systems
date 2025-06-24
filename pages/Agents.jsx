@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 export default function AgentsPage() {
   const [agents, setAgents] = useState([]);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState({});
   const [output, setOutput] = useState(null);
+  const prefersReduced = useReducedMotion();
 
   useEffect(() => {
     fetch('/agents.json')
@@ -36,14 +37,19 @@ export default function AgentsPage() {
       <h1 className="text-2xl font-bold mb-4">Agent Library</h1>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {agents.map(a => (
-          <div key={a.id} className="border rounded p-4 space-y-2">
+          <motion.div
+            key={a.id}
+            whileHover={prefersReduced ? {} : { scale: 1.03, translateY: -4 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            className="border rounded p-4 space-y-2 bg-gray-800 text-white shadow"
+          >
             <div className="font-semibold">{a.name}</div>
             <div className="text-xs text-gray-500">{a.category}</div>
             <p className="text-sm">{a.summary}</p>
             <button onClick={() => open(a)} className="text-sm text-blue-600 underline">
               Run Now
             </button>
-          </div>
+          </motion.div>
         ))}
       </div>
 
