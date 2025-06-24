@@ -1635,6 +1635,84 @@ app.get('/report', (req, res) => {
   runLifecycleCheck();
 });
 
+// Export full website analysis report
+async function handleExportReport(req, res) {
+  const { token } = req.params;
+  let runId = '';
+  try {
+    runId = decodeURIComponent(Buffer.from(token, 'base64').toString('utf8'));
+  } catch {
+    return res.status(400).json({ error: 'invalid_token' });
+  }
+
+  const userId = 'demo';
+  let flowData = null;
+
+  if (db) {
+    try {
+      const docRef = db
+        .collection('flows')
+        .doc(userId)
+        .collection(runId)
+        .doc('state');
+      const snap = await docRef.get();
+      if (snap.exists) flowData = snap.data();
+    } catch (err) {
+      console.error('Firestore read error', err.message);
+    }
+  }
+
+  if (!flowData) {
+    try {
+      const file = path.join(LOG_DIR, `${encodeURIComponent(runId)}.json`);
+      if (fs.existsSync(file)) {
+        flowData = JSON.parse(fs.readFileSync(file, 'utf8'));
+      }
+    } catch {}
+  }
+
+  if (!flowData) return res.status(404).json({ error: 'not_found' });
+
+  function esc(str = '') {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  const rows = (flowData.steps || [])
+    .map(s => {
+      const output =
+        typeof s.output === 'string'
+          ? s.output
+          : JSON.stringify(s.output || '', null, 2);
+      return `<tr><td>${esc(s.agent)}</td><td><pre>${esc(output)}</pre></td><td><pre>${esc(
+        s.explanation || ''
+      )}</pre></td></tr>`;
+    })
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>AI Agent Systems Report</title>
+<style>body{font-family:sans-serif;color:#111;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;vertical-align:top;}pre{white-space:pre-wrap;font-family:monospace;}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}footer{text-align:center;margin-top:40px;font-size:.8em;color:#666;}</style>
+</head><body>
+<header><h1>AI Agent Systems Report</h1><div>${new Date().toLocaleString()}</div></header>
+<h2>Website: ${esc(runId)}</h2>
+<table><thead><tr><th>Agent</th><th>Output</th><th>Explanation</th></tr></thead><tbody>${rows}</tbody></table>
+<footer>Powered by AI Agent Systems</footer>
+</body></html>`;
+
+  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(
+    runId
+  )}-report.html"`);
+  res.send(html);
+}
+
+app.get('/export-report/:token', handleExportReport);
+
 // Health check summary
 app.get('/health-check', async (req, res) => {
   try {
@@ -1683,6 +1761,7 @@ exports.report = functions.https.onRequest((req, res) => {
     res.json(logs);
     runLifecycleCheck();
   });
+  exports.exportReport = functions.https.onRequest(handleExportReport);
 }
 exports.executeAgent = functions.https.onRequest((req, res) => {
   billingMiddleware(req, res, () => handleExecuteAgent(req, res));
