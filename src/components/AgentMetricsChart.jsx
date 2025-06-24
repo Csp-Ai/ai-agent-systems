@@ -41,9 +41,9 @@ export default function AgentMetricsChart() {
   }, []);
 
   return (
-    <div className="p-4 bg-white rounded shadow mt-4">
-      <h2 className="text-lg font-semibold mb-2">Agent Latency Over Time</h2>
-      <ResponsiveContainer width="100%" height={300}>
+    <div className="space-y-2">
+      <h2 className="text-lg font-semibold">Agent Latency Over Time</h2>
+      <ResponsiveContainer width="100%" height={300} className="bg-white dark:bg-gray-800 rounded shadow">
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="time" />
