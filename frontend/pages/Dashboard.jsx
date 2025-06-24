@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import NeuralBackground from '../components/NeuralBackground.jsx';
+import NeuralBackground from '../../components/NeuralBackground.jsx';
 import {
   collection,
   query,
@@ -10,15 +10,15 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore';
-import Sidebar from '../components/Sidebar.jsx';
-import AgentLogList from '../components/AgentLogList.jsx';
-import AgentDetailDrawer from '../components/AgentDetailDrawer.jsx';
-import OnboardingModal from '../components/OnboardingModal.jsx';
-import BillingPanel from '../frontend/client/BillingPanel.jsx';
-import FlowStatusBadge from '../components/FlowStatusBadge.jsx';
-import AgentUsageCard from '../components/AgentUsageCard.jsx';
-import { db, auth } from '../frontend/src/firebase.js';
-import { useTheme } from '../context/ThemeContext.jsx';
+import Sidebar from '../../components/Sidebar.jsx';
+import AgentLogList from '../../components/AgentLogList.jsx';
+import AgentDetailDrawer from '../../components/AgentDetailDrawer.jsx';
+import OnboardingModal from '../../components/OnboardingModal.jsx';
+import BillingPanel from '../client/BillingPanel.jsx';
+import FlowStatusBadge from '../../components/FlowStatusBadge.jsx';
+import AgentUsageCard from '../../components/AgentUsageCard.jsx';
+import { db, auth } from '../src/firebase.js';
+import { useTheme } from '../../context/ThemeContext.jsx';
 
 function AgentStatusPanel({ agents = [] }) {
   return (
