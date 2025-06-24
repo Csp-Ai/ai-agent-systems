@@ -4,7 +4,7 @@ import FlowVisualizer from '../components/FlowVisualizer.jsx';
 export default function FlowViewPage({ flowId }) {
   return (
     <div className="p-4">
-      <FlowVisualizer flowId={flowId} />
+      <FlowVisualizer flowId="website-analysis" runId={flowId} />
     </div>
   );
 }

@@ -2,6 +2,23 @@ const fs = require('fs');
 const path = require('path');
 const { writeDocument } = require('../functions/db');
 
+const LOG_DIR = path.join(__dirname, '..', 'logs');
+const LOG_FILE = path.join(LOG_DIR, 'logs.json');
+
+function appendLog(entry) {
+  let logs = [];
+  try {
+    if (fs.existsSync(LOG_FILE)) {
+      logs = JSON.parse(fs.readFileSync(LOG_FILE, 'utf8'));
+    }
+  } catch {
+    logs = [];
+  }
+  logs.push(entry);
+  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+  fs.writeFileSync(LOG_FILE, JSON.stringify(logs, null, 2));
+}
+
 function loadFlowConfig(flowId) {
   const fp = path.join(__dirname, '..', 'flows', `${flowId}.json`);
   if (!fs.existsSync(fp)) {
@@ -52,21 +69,22 @@ function resolvePlaceholders(obj, context) {
 }
 
 /**
- * Execute a multi-agent flow defined in /flows/{flowId}.json
- * @param {Object} input Initial user input
- * @param {string} flowId Flow config file name without extension
- * @param {Object} opts Additional options { userId }
+ * Execute the website-analysis flow for a given URL
+ * @param {string} url Website to analyze
+ * @param {string} runId Identifier used for logging
+ * @param {Object} opts Additional options { userId, configId }
  */
-async function runAgentFlow(input, flowId, opts = {}) {
-  const { userId = 'anon' } = opts;
-  const config = loadFlowConfig(flowId);
+async function runAgentFlow(url, runId, opts = {}) {
+  const { userId = 'anon', configId = 'website-analysis' } = opts;
+  const config = loadFlowConfig(configId);
   const flowState = {
-    id: flowId,
+    id: runId,
     userId,
     started: new Date().toISOString(),
     steps: []
   };
 
+  const input = { url };
   const ctx = { input, steps: {} };
 
   for (const step of config.steps) {
@@ -96,18 +114,21 @@ async function runAgentFlow(input, flowId, opts = {}) {
         }
       } else if (step.onError !== 'continue') {
         flowState.steps.push(state);
-        await writeDocument(`flows/${userId}`, flowId, flowState).catch(() => {});
+        await writeDocument(`flows/${userId}`, runId, flowState).catch(() => {});
+        appendLog({ flowId: runId, step: id, status: 'error', error: err.message, timestamp: new Date().toISOString() });
         return flowState;
       }
     }
 
     flowState.steps.push(state);
-    await writeDocument(`flows/${userId}`, flowId, flowState).catch(() => {});
+    await writeDocument(`flows/${userId}`, runId, flowState).catch(() => {});
+    appendLog({ flowId: runId, step: id, status: state.success ? 'complete' : 'error', timestamp: new Date().toISOString() });
   }
 
   flowState.completed = true;
   flowState.finished = new Date().toISOString();
-  await writeDocument(`flows/${userId}`, flowId, flowState).catch(() => {});
+  await writeDocument(`flows/${userId}`, runId, flowState).catch(() => {});
+  appendLog({ flowId: runId, status: 'complete', timestamp: new Date().toISOString() });
   return flowState;
 }
 

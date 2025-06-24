@@ -1512,10 +1512,16 @@ if (process.env.NODE_ENV !== 'production') {
   });
 
   app.post('/run-flow', async (req, res) => {
-    const { flowId = '', userId = 'test-user', input = {} } = req.body || {};
+    const { flowId = '', userId = 'test-user' } = req.body || {};
     if (!flowId) return res.status(400).json({ error: 'flowId required' });
+    let url = '';
     try {
-      const result = await runAgentFlow(input, flowId, { userId });
+      url = decodeURIComponent(Buffer.from(flowId, 'base64').toString('utf8'));
+    } catch {
+      return res.status(400).json({ error: 'invalid flowId' });
+    }
+    try {
+      const result = await runAgentFlow(url, url, { userId, configId: 'website-analysis' });
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });

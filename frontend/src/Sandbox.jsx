@@ -5,6 +5,7 @@ export default function Sandbox() {
   const [flows, setFlows] = useState([]);
   const [flowId, setFlowId] = useState('');
   const [result, setResult] = useState(null);
+  const [websiteUrl, setWebsiteUrl] = useState('');
 
   useEffect(() => {
     fetch('/flows')
@@ -18,14 +19,14 @@ export default function Sandbox() {
   }, [flows, flowId]);
 
   const run = async () => {
-    if (!flowId) return;
-    const res = await fetch('/run-flow', {
+    if (!flowId || !websiteUrl) return;
+    const encoded = btoa(encodeURIComponent(websiteUrl));
+    await fetch('/run-flow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ flowId, userId: 'dev-sandbox' })
-    });
-    const data = await res.json();
-    setResult(data);
+      body: JSON.stringify({ flowId: encoded, userId: 'dev-sandbox' })
+    }).catch(() => {});
+    window.location.href = `/flows/${encodeURIComponent(encoded)}/view`;
   };
 
   return (
@@ -43,6 +44,13 @@ export default function Sandbox() {
             </option>
           ))}
         </select>
+        <input
+          type="text"
+          value={websiteUrl}
+          onChange={e => setWebsiteUrl(e.target.value)}
+          placeholder="Website URL"
+          className="p-2 rounded text-black flex-1"
+        />
         <button onClick={run} className="bg-blue-600 text-white px-3 py-1 rounded">
           Run Test
         </button>
