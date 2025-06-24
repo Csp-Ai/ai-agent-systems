@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import { existsSync, writeFileSync } from 'fs'
 import path, { resolve } from 'path'
 
+const rootPostCssConfig = path.resolve(__dirname, '..', 'postcss.config.js')
+
 const indexHtml = (() => {
   const index = resolve(__dirname, 'index.html')
   if (existsSync(index)) {
@@ -28,10 +30,10 @@ export default defineConfig({
     },
   },
   ssr: {
-    noExternal: ['firebase'],
+    noExternal: ['firebase', 'tailwindcss'],
   },
   css: {
-    postcss: path.resolve(__dirname, '../postcss.config.js'),
+    postcss: rootPostCssConfig,
   },
   build: {
     outDir: 'build',
