@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import FlowVisualizer from '../../components/FlowVisualizer.jsx';
+import FlowVisualizer from '../FlowVisualizer.jsx';
 
 export default function Sandbox() {
   const [flows, setFlows] = useState([]);

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Loader2, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import useAgentStepStatus from '../hooks/useAgentStepStatus.js';
 import loadFlowConfig from '../utils/loadFlowConfig.js';
-import AgentDetailDrawer from './AgentDetailDrawer.jsx';
+import AgentDetailDrawer from '../components/AgentDetailDrawer.jsx';
 import exportFlowResult from '../utils/exportFlowResult.js';
 
 const statusStyles = {
