@@ -12,6 +12,7 @@ import OnboardingOverlay from './OnboardingOverlay.jsx';
 import Gallery from './Gallery.jsx';
 import AgentsPage from '../../pages/Agents.jsx';
 import Dashboard from '../../pages/Dashboard.jsx';
+import FlowViewPage from '../../pages/flows/[flowId]/view.jsx';
 import FeedbackFab from './FeedbackFab.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 
@@ -24,6 +25,8 @@ function App() {
     const isAgents = path.startsWith('/agents');
     const isUseCases = path.startsWith('/use-cases');
     const isDashboard = path.startsWith('/dashboard');
+    const flowViewMatch = path.match(/^\/flows\/([^/]+)\/view/);
+    const isFlowView = !!flowViewMatch;
 
     const [onboarded, setOnboarded] = useState(
       localStorage.getItem('onboarded') === 'true'
@@ -61,6 +64,12 @@ function App() {
       content = <UseCaseSelector />;
     } else if (isDashboard) {
       content = <Dashboard />;
+    } else if (isFlowView) {
+      let decoded = flowViewMatch[1];
+      try {
+        decoded = atob(decodeURIComponent(decoded));
+      } catch {}
+      content = <FlowViewPage flowId={decoded} />;
     } else {
       content = (
         <>
