@@ -44,6 +44,7 @@
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
     "firebase-admin": "^13.4.0",
+    "framer-motion": "^12.19.1",
     "html2pdf.js": "^0.10.3",
     "jszip": "^3.10.1",
     "minimist": "^1.2.8",
