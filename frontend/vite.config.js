@@ -20,6 +20,16 @@ const indexHtml = (() => {
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '~components': resolve(__dirname, 'components'),
+      '~firebase': resolve(__dirname, 'src/firebase.js'),
+    },
+  },
+  ssr: {
+    noExternal: ['firebase'],
+  },
   build: {
     outDir: 'build',
     emptyOutDir: true,
