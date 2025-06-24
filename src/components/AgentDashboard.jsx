@@ -5,9 +5,15 @@ export default function AgentDashboard() {
   const [log, setLog] = useState('');
 
   useEffect(() => {
-    fetch('/logs/learning.log')
-      .then(res => res.text())
-      .then(data => setLog(data));
+    const fetchLog = () => {
+      fetch('/logs/learning.log')
+        .then(res => res.text())
+        .then(data => setLog(data));
+    };
+
+    fetchLog();
+    const interval = setInterval(fetchLog, 3000); // Refresh every 3s
+    return () => clearInterval(interval);
   }, []);
 
   return (
