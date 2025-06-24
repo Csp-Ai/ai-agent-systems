@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import AgentCard from '../components/AgentCard';
-import LiveAgentGraph from '../components/LiveAgentGraph';
-import { useTheme } from '../components/ThemeContext';
-import TourOverlay from '../components/TourOverlay';
+import AgentCard from '../../components/AgentCard';
+import LiveAgentGraph from '../../components/LiveAgentGraph';
+import { useTheme } from '../../components/ThemeContext';
+import TourOverlay from '../../components/TourOverlay';
 
 const Landing = () => {
   const { theme, toggleTheme } = useTheme();
