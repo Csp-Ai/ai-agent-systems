@@ -1,139 +1,88 @@
-import React, { useEffect, useState } from "react";
-import { AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import Sidebar from '../components/Sidebar.jsx';
+import AgentLogList from '../components/AgentLogList.jsx';
+import AgentDetailDrawer from '../components/AgentDetailDrawer.jsx';
+import { useTheme } from '../context/ThemeContext.jsx';
 
-import NeuralAgentMap from "../components/NeuralAgentMap.jsx";
-import StatusCard from "../components/StatusCard.jsx";
-import RealTimeLogConsole from "../components/RealTimeLogConsole.jsx";
-import AgentSidebar from "../components/AgentSidebar.jsx";
-
-import { useTheme } from "../context/ThemeContext.jsx";
+function AgentStatusPanel({ agents = [] }) {
+  return (
+    <div className="p-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+      {agents.map((a) => (
+        <motion.div
+          key={a.id}
+          layout
+          className="border rounded p-2 flex justify-between items-center"
+        >
+          <span>{a.name || a.id}</span>
+          <motion.span
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            className={a.status === 'running' ? 'text-green-600' : 'text-red-600'}
+          >
+            {a.status === 'running' ? '✅ Running' : '❌ Failed'}
+          </motion.span>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
+  const [view, setView] = useState('logs');
+  const [selectedLog, setSelectedLog] = useState(null);
   const [agents, setAgents] = useState([]);
-  const [collapsed, setCollapsed] = useState(false);
-  const [showMap, setShowMap] = useState(() => {
-    const saved = localStorage.getItem("showNeuralMap");
-    return saved ? JSON.parse(saved) : true;
-  });
-  const [logEvents, setLogEvents] = useState([]);
-  const [decisionLogs, setDecisionLogs] = useState([]);
+  const [firstVisit, setFirstVisit] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("showNeuralMap", JSON.stringify(showMap));
-  }, [showMap]);
+    if (!localStorage.getItem('dashboardVisited')) {
+      setFirstVisit(true);
+      localStorage.setItem('dashboardVisited', 'true');
+    }
+  }, []);
 
   useEffect(() => {
-    fetch("/agents/agent-metadata.json")
+    fetch('/api/agents')
       .then((r) => r.json())
-      .then((data) =>
-        setAgents(Object.keys(data || {}).map((id) => ({ id, ...data[id] }))),
-      )
+      .then((data) => Array.isArray(data) && setAgents(data))
       .catch(() => setAgents([]));
   }, []);
 
-  useEffect(() => {
-    const loadAgents = async () => {
-      try {
-        const res = await fetch("/api/agents");
-        const data = await res.json();
-        if (Array.isArray(data)) setAgents(data);
-      } catch {
-        setAgents([
-          { id: "insights-agent" },
-          { id: "swat-agent" },
-          { id: "data-agent" },
-        ]);
-      }
-    };
-    loadAgents();
-  }, []);
+  const sidebarItems = [
+    { id: 'logs', label: 'Agent Logs' },
+    { id: 'reports', label: 'Reports' },
+    { id: 'status', label: 'Live Status' },
+  ];
 
-  useEffect(() => {
-    fetch("/logs/agent-decisions")
-      .then((r) => r.json())
-      .then((data) => setDecisionLogs(Array.isArray(data) ? data : []))
-      .catch(() => setDecisionLogs([]));
-
-    const loadLogs = async () => {
-      try {
-        const res = await fetch("/api/dashboard-logs");
-        const data = await res.json();
-        setLogEvents(Array.isArray(data) ? data : []);
-      } catch {
-        setLogEvents([]);
-      }
-    };
-    loadLogs();
-  }, []);
-
-  const agentStates = agents.map((agent) => {
-    const log = logEvents.find((l) => l.agent === agent.id) || {};
-    let status = "idle";
-    if (log.timestamp) {
-      const age = Date.now() - new Date(log.timestamp).getTime();
-      status = log.error ? "error" : age < 5 * 60 * 1000 ? "running" : "idle";
-    }
-    return { id: agent.id, name: agent.name, status, log };
-  });
-
-  const toggle = () => setCollapsed((c) => !c);
+  const runningAgents = agents.map((a) => ({
+    id: a.id,
+    name: a.name || a.id,
+    status: 'running',
+  }));
 
   return (
-    <div className="min-h-screen grid md:grid-cols-2 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <div className="p-4 space-y-4">
-        <AgentSidebar
-          agents={agentStates}
-          collapsed={collapsed}
-          onToggle={toggle}
-        />
-        <RealTimeLogConsole className="h-64" />
-      </div>
-      <div className="p-4 space-y-4">
-        <header className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Agent Dashboard</h1>
-          <div className="space-x-2">
-            <button onClick={toggleTheme} className="text-sm">
-              Toggle {theme === "dark" ? "Light" : "Dark"} Mode
-            </button>
-            <button onClick={() => setShowMap((m) => !m)} className="text-sm">
-              {showMap ? "Hide" : "Show"} Map
-            </button>
-          </div>
+    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      <Sidebar items={sidebarItems} current={view} onSelect={setView} />
+      <div className="flex-1 flex flex-col">
+        <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <h1 className="font-bold text-xl">Dashboard</h1>
+          <button onClick={toggleTheme} className="text-sm">
+            Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode
+          </button>
         </header>
-        <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-          <AnimatePresence>
-            {agentStates.map((a) => (
-              <StatusCard key={a.id} agent={a} />
-            ))}
-          </AnimatePresence>
-        </div>
-        {showMap && (
-          <div className="h-[500px]">
-            <NeuralAgentMap
-              agents={agentStates.map((a) => ({
-                name: a.id,
-                icon: "🤖",
-                color:
-                  a.status === "running"
-                    ? "#10b981"
-                    : a.status === "error"
-                      ? "#ef4444"
-                      : "#9ca3af",
-              }))}
-              logEvents={[
-                ...logEvents.map(
-                  (l) => `${l.agent} - ${l.error ? "error" : "running"}`,
-                ),
-                ...decisionLogs.map(
-                  (d) => `${d.agent} - ${d.action} (${d.context})`,
-                ),
-              ]}
-            />
-          </div>
-        )}
-        <RealTimeLogConsole className="h-64" />
+        <main className="flex-1 overflow-hidden">
+          {firstVisit && (
+            <div className="p-4 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              Welcome to AI Agent Systems — here you’ll see real-time insights, track agents, and monitor performance.
+            </div>
+          )}
+          {view === 'logs' && <AgentLogList onSelect={setSelectedLog} />}
+          {view === 'status' && <AgentStatusPanel agents={runningAgents} />}
+          {view === 'reports' && <div className="p-4">Reports coming soon...</div>}
+        </main>
       </div>
+      <AgentDetailDrawer log={selectedLog} onClose={() => setSelectedLog(null)} />
     </div>
   );
 }
