@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import ReactFlow, { Background, Controls, MarkerType } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { motion } from 'framer-motion';
+import { Loader2, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import useAgentStepStatus from '../hooks/useAgentStepStatus.js';
 import loadFlowConfig from '../utils/loadFlowConfig.js';
 import AgentDetailDrawer from './AgentDetailDrawer.jsx';
@@ -8,9 +10,23 @@ import exportFlowResult from '../utils/exportFlowResult.js';
 
 const statusStyles = {
   waiting: 'bg-gray-500',
-  running: 'bg-blue-500 animate-pulse',
-  complete: 'bg-green-600',
-  error: 'bg-red-600'
+  running: 'bg-blue-500',
+  complete: 'bg-green-400 text-black drop-shadow-[0_0_6px_rgba(0,255,0,0.6)]',
+  error: 'bg-red-600 animate-pulse'
+};
+
+const statusIcons = {
+  waiting: Clock,
+  running: Loader2,
+  complete: CheckCircle,
+  error: AlertTriangle
+};
+
+const variants = {
+  waiting: { scale: 1 },
+  running: { scale: 1.05 },
+  complete: { scale: 1, transition: { duration: 0.3 } },
+  error: { scale: 1.05 }
 };
 
 function extractInputs(input) {
@@ -26,18 +42,33 @@ function StepNode({ data }) {
   useEffect(() => {
     onStatus && onStatus(status, log);
   }, [status, log]);
+
+  const Icon = statusIcons[status] || Clock;
+
   return (
-    <div
+    <motion.div
       onClick={() => onSelect({ ...log, agent: step.agent })}
-      className={`cursor-pointer text-white rounded-md px-3 py-2 shadow ${
+      className={`cursor-pointer rounded-md px-3 py-2 shadow text-white ${
         statusStyles[status] || statusStyles.waiting
       }`}
+      variants={variants}
+      animate={status}
+      initial="waiting"
     >
-      <div className="text-sm font-semibold">
-        {step.displayName || step.agent}
+      <div className="flex items-center gap-2">
+        <Icon
+          className={`w-4 h-4 ${
+            status === 'running' ? 'animate-spin' : ''
+          }`}
+        />
+        <div>
+          <div className="text-sm font-semibold">
+            {step.displayName || step.agent}
+          </div>
+          <div className="text-xs capitalize opacity-80">{status}</div>
+        </div>
       </div>
-      <div className="text-xs capitalize opacity-80">{status}</div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -140,18 +171,21 @@ export default function FlowVisualizer({ flowId: propFlowId, runId: propRunId, c
       {complete && (
         <div className="absolute top-2 right-2 flex gap-2 z-10">
           <button
-            onClick={downloadReport}
-            className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
-          >
-            Download Report
-          </button>
-          <button
             onClick={copyLink}
             className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
           >
             Copy Share Link
           </button>
         </div>
+      )}
+      {complete && (
+        <motion.button
+          onClick={downloadReport}
+          whileHover={{ scale: 1.05, y: -2 }}
+          className="fixed bottom-4 right-4 bg-blue-600 text-white text-sm px-3 py-2 rounded-full shadow-lg z-20"
+        >
+          Download Report
+        </motion.button>
       )}
       {failed && !complete && (
         <div className="absolute inset-x-0 bottom-2 text-center text-red-400 text-sm">

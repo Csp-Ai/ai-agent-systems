@@ -73,28 +73,8 @@ export default function FlowViewPage({ flowId }) {
     };
   }, [flowId]);
 
-  const download = async () => {
-    const res = await fetch(`/export-report/${encodeURIComponent(token)}`);
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${flowId}-report.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="p-4">
-      {complete && (
-        <button
-          onClick={download}
-          className="bg-blue-600 text-white text-sm px-2 py-1 rounded mb-2"
-        >
-          📄 Download Full Report
-        </button>
-      )}
       <FlowVisualizer flowId="website-analysis" runId={flowId} />
     </div>
   );
