@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import NeuralBackground from '../components/NeuralBackground.jsx';
 import {
   collection,
   query,
@@ -161,7 +162,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="relative min-h-screen flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
+      <NeuralBackground className="absolute inset-0 pointer-events-none opacity-40" />
       <Sidebar items={sidebarItems} current={view} onSelect={setView} />
       <div className="flex-1 flex flex-col">
         <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">

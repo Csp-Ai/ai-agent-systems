@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import NeuralBackground from '../../components/NeuralBackground.jsx';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -8,6 +9,26 @@ import AgentTracker from './AgentTracker';
 import AgentConsoleView from './AgentConsoleView';
 import AgentInteractionVisualizer from './AgentInteractionVisualizer';
 import './LandingPage.css'; // 🧠 NEW import
+
+const HeroCopy = () => {
+  const text = 'Analyze any website. Discover hidden insights.';
+  const [display, setDisplay] = useState('');
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      setDisplay(text);
+      return;
+    }
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setDisplay(text.slice(0, i));
+      if (i >= text.length) clearInterval(id);
+    }, 50);
+    return () => clearInterval(id);
+  }, []);
+  return <span>{display}</span>;
+};
 
 const LandingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -179,10 +200,13 @@ const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-hidden text-white">
+      <NeuralBackground className="absolute inset-0 pointer-events-none" />
       <div className="relative z-10">
         <section className="py-20 text-center">
-          <h1 className="text-4xl font-bold text-white mb-4">Analyze Your Website</h1>
+          <h1 className="text-4xl font-bold mb-4">
+            <HeroCopy />
+          </h1>
           <form onSubmit={handleFlowSubmit} className="max-w-xl mx-auto flex">
             <input
               type="text"
