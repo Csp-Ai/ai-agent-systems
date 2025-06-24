@@ -30,7 +30,7 @@ export default function Sandbox() {
   };
 
   return (
-    <div className="p-6 space-y-4 text-white">
+    <div className="p-6 space-y-4 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white min-h-screen">
       <h1 className="text-2xl font-bold">Flow Sandbox</h1>
       <div className="flex items-center gap-2">
         <select
