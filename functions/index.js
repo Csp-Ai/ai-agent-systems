@@ -22,6 +22,7 @@ const runHealthChecks = require('./healthCheck');
 const { appendUsageLog } = require('./usageLogger');
 const { reportSOP } = require('./sopReporter');
 const { recordRun, scheduleWeeklySummary } = require('../utils/agentHealthTracker');
+const { appendLearningLog } = require('./learningLogger');
 const { billingMiddleware, incrementUsage, getBillingStatus } = require('./middleware/billing');
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
@@ -636,6 +637,12 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       input,
       output: result
     });
+    appendLearningLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      metric: 'latency',
+      value: Date.now() - startTime
+    });
     appendUsageLog(orgId, agentName, {
       timestamp: new Date().toISOString(),
       userId,
@@ -676,6 +683,12 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       input,
       status: 'failed',
       reason: err.message
+    });
+    appendLearningLog({
+      timestamp: new Date().toISOString(),
+      agent: agentName,
+      metric: 'latency',
+      value: Date.now() - startTime
     });
     writeExplanation(agentName, { input, error: err.message });
     writeFailureStatus(agentName, err.message);

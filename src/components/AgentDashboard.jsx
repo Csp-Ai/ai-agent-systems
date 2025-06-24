@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import LogChart from './LogChart';
 
 export default function AgentDashboard() {
   const [log, setLog] = useState('');
@@ -21,6 +22,7 @@ export default function AgentDashboard() {
       <pre className="bg-black text-green-400 p-2 mt-2 max-h-[500px] overflow-y-scroll rounded-lg shadow">
         {log}
       </pre>
+      <LogChart />
     </div>
   );
 }
