@@ -125,7 +125,7 @@ async function run(options = {}) {
     return result;
   } catch (err) {
     console.error(chalk.red(`\n❌ ${agentName} failed:`), err.message || err);
-    throw err;
+    return { status: 'failed', reason: err.message };
   }
 }
 

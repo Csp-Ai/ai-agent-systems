@@ -1,4 +1,7 @@
 name: CI
+# This workflow validates pull requests for the ops-focused AI agent platform.
+# Linting, tests, and builds help maintain launch quality across freemium,
+# Pro, and Enterprise tiers described in our business context.
 
 on:
   pull_request:
@@ -45,6 +48,9 @@ jobs:
         if: steps.changes.outputs.skip != 'true'
 
       - run: npm test --if-present
+        if: steps.changes.outputs.skip != 'true'
+
+      - run: npm run build --if-present
         if: steps.changes.outputs.skip != 'true'
 
       - run: node scripts/constitution-check.js

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Writes logs/post-deploy-summary.json to capture deployment details.
+// Helps track iterations as we scale the ops-focused AI SaaS.
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -45,7 +47,7 @@ function getAgents(metaPath) {
 
 function main() {
   const rootDir = path.resolve(__dirname, '..');
-  const summaryPath = path.join(rootDir, 'logs', 'summary.json');
+  const summaryPath = path.join(rootDir, 'logs', 'post-deploy-summary.json');
   const qaPath = path.join(rootDir, 'logs', 'qa', 'codex-qa-agent.json');
   const deployPath = path.join(rootDir, 'logs', 'postdeploy', 'cloudrun-postdeploy.json');
   const metaPath = path.join(rootDir, 'agents', 'agent-metadata.json');
