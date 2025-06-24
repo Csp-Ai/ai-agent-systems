@@ -7,7 +7,9 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build"
-      }
+      },
+      "installCommand": "npm install --prefix .. && npm install",
+      "buildCommand": "npm run build"
     }
   ],
   "rewrites": [
