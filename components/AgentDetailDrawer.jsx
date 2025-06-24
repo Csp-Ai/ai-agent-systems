@@ -3,6 +3,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 export default function AgentDetailDrawer({ log, onClose }) {
   const ts = log?.timestamp ? new Date(log.timestamp).toLocaleString() : '';
+  const jsonData = JSON.stringify(
+    {
+      input: log?.input,
+      output: log?.output,
+      explanation: log?.explanation,
+    },
+    null,
+    2
+  );
   return (
     <AnimatePresence>
       {log && (
@@ -19,14 +28,40 @@ export default function AgentDetailDrawer({ log, onClose }) {
               Close
             </button>
             <h2 className="text-lg font-bold mb-1">{log.agent}</h2>
-            <div className="text-xs opacity-80 mb-4">{ts}</div>
-            <pre className="whitespace-pre-wrap break-words text-sm mb-4">{log.output}</pre>
-            <button
-              onClick={() => navigator.clipboard.writeText(log.output || '')}
-              className="text-xs underline"
-            >
-              Copy
-            </button>
+            <div className="text-xs opacity-80 mb-2">{ts}</div>
+            {log.input && (
+              <div className="mb-2 text-sm">
+                <div className="font-semibold mb-1">Input</div>
+                <pre className="whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs">{JSON.stringify(log.input, null, 2)}</pre>
+              </div>
+            )}
+            {log.output && (
+              <div className="mb-2 text-sm">
+                <div className="font-semibold mb-1">Output</div>
+                <pre className="whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs">{typeof log.output === 'string' ? log.output : JSON.stringify(log.output, null, 2)}</pre>
+              </div>
+            )}
+            {log.explanation && (
+              <div className="mb-2 text-sm">
+                <div className="font-semibold mb-1">Explanation</div>
+                <pre className="whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-700 p-2 rounded text-xs">{log.explanation}</pre>
+              </div>
+            )}
+            <div className="flex gap-4 mt-2">
+              <button
+                onClick={() => navigator.clipboard.writeText(jsonData)}
+                className="text-xs underline"
+              >
+                Copy JSON
+              </button>
+              <a
+                href={`data:application/json,${encodeURIComponent(jsonData)}`}
+                download={`${log.agent}-output.json`}
+                className="text-xs underline"
+              >
+                Download
+              </a>
+            </div>
           </motion.div>
         </motion.div>
       )}
