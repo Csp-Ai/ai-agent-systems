@@ -2,6 +2,7 @@ import React, { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AnimatePresence } from 'framer-motion';
 import './index.css';
+
 import LandingPage from './LandingPage.jsx';
 import DevToolsPanel from './DevToolsPanel.jsx';
 import DemoPage from './DemoPage.jsx';
@@ -12,7 +13,8 @@ import OnboardingOverlay from './OnboardingOverlay.jsx';
 import Gallery from './Gallery.jsx';
 import AgentsPage from '../../pages/Agents.jsx';
 import Dashboard from '../../pages/Dashboard.jsx';
-import FlowViewPage from '../../pages/flows/[flowId]/view.jsx';
+import FlowViewPage from '../../pages/flows/[flowId]/View.jsx'; // ✅ merged
+import Sandbox from './Sandbox.jsx';
 import FeedbackFab from './FeedbackFab.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 
@@ -25,8 +27,9 @@ function App() {
     const isAgents = path.startsWith('/agents');
     const isUseCases = path.startsWith('/use-cases');
     const isDashboard = path.startsWith('/dashboard');
-    const flowViewMatch = path.match(/^\/flows\/([^/]+)\/view/);
+    const flowViewMatch = path.match(/^\/flows\/([^/]+)\/view/); // ✅ merged
     const isFlowView = !!flowViewMatch;
+    const isSandbox = path.startsWith('/sandbox');
 
     const [onboarded, setOnboarded] = useState(
       localStorage.getItem('onboarded') === 'true'
@@ -70,6 +73,8 @@ function App() {
         decoded = atob(decodeURIComponent(decoded));
       } catch {}
       content = <FlowViewPage flowId={decoded} />;
+    } else if (isSandbox) {
+      content = <Sandbox />;
     } else {
       content = (
         <>
@@ -113,3 +118,4 @@ createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </StrictMode>
 );
+

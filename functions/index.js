@@ -25,6 +25,7 @@ const { recordRun, scheduleWeeklySummary } = require('../utils/agentHealthTracke
 const { billingMiddleware, incrementUsage, getBillingStatus } = require('./middleware/billing');
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
+const { runAgentFlow } = require('../core/agentFlowEngine');
 
 // Load environment variables from .env or .env.production in production
 const prodEnv = path.join(__dirname, '..', '.env.production');
@@ -1498,6 +1499,29 @@ app.post('/analytics', (req, res) => {
   appendAnalytics({ id: uuidv4(), event, data, timestamp: new Date().toISOString() });
   res.json({ success: true });
 });
+
+// Developer flow tools
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/flows', (_req, res) => {
+    const dir = path.join(__dirname, '..', 'flows');
+    const files = fs
+      .readdirSync(dir)
+      .filter(f => f.endsWith('.json'))
+      .map(f => path.basename(f, '.json'));
+    res.json(files);
+  });
+
+  app.post('/run-flow', async (req, res) => {
+    const { flowId = '', userId = 'test-user', input = {} } = req.body || {};
+    if (!flowId) return res.status(400).json({ error: 'flowId required' });
+    try {
+      const result = await runAgentFlow(input, flowId, { userId });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+}
 
 // Dashboard interaction logs
 app.post('/dashboard-log', (req, res) => {
