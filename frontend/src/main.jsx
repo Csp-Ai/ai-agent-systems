@@ -12,6 +12,7 @@ import OnboardingOverlay from './OnboardingOverlay.jsx';
 import Gallery from './Gallery.jsx';
 import AgentsPage from '../../pages/Agents.jsx';
 import Dashboard from '../../pages/Dashboard.jsx';
+import Sandbox from './Sandbox.jsx';
 import FeedbackFab from './FeedbackFab.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 
@@ -24,6 +25,7 @@ function App() {
     const isAgents = path.startsWith('/agents');
     const isUseCases = path.startsWith('/use-cases');
     const isDashboard = path.startsWith('/dashboard');
+    const isSandbox = path.startsWith('/sandbox');
 
     const [onboarded, setOnboarded] = useState(
       localStorage.getItem('onboarded') === 'true'
@@ -61,6 +63,8 @@ function App() {
       content = <UseCaseSelector />;
     } else if (isDashboard) {
       content = <Dashboard />;
+    } else if (isSandbox) {
+      content = <Sandbox />;
     } else {
       content = (
         <>
