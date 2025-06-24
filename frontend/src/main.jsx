@@ -10,6 +10,7 @@ import WelcomeOverlay from './WelcomeOverlay.jsx';
 import WelcomeExperience from './WelcomeExperience.jsx';
 import OnboardingOverlay from './OnboardingOverlay.jsx';
 import Gallery from './Gallery.jsx';
+import AgentsPage from '../../pages/Agents.jsx';
 import Dashboard from '../../pages/Dashboard.jsx';
 import FeedbackFab from './FeedbackFab.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
@@ -20,6 +21,7 @@ function App() {
   try {
     const isDemo = path.startsWith('/demo');
     const isGallery = path.startsWith('/gallery');
+    const isAgents = path.startsWith('/agents');
     const isUseCases = path.startsWith('/use-cases');
     const isDashboard = path.startsWith('/dashboard');
 
@@ -53,6 +55,8 @@ function App() {
       content = <DemoPage />;
     } else if (isGallery) {
       content = <Gallery />;
+    } else if (isAgents) {
+      content = <AgentsPage />;
     } else if (isUseCases) {
       content = <UseCaseSelector />;
     } else if (isDashboard) {

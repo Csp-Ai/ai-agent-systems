@@ -1,0 +1,52 @@
+[
+  {
+    "id": "insights-agent",
+    "name": "Content Insights Agent",
+    "category": "CX / Marketing",
+    "summary": "Analyzes content engagement metrics to highlight optimization opportunities.",
+    "defaultInputs": {
+      "companyName": "Acme Corp",
+      "websiteUrl": "https://acme.com",
+      "email": "info@acme.com"
+    }
+  },
+  {
+    "id": "website-scanner-agent",
+    "name": "Website Scanner Agent",
+    "category": "Data Extraction",
+    "summary": "Fetches a website URL and extracts metadata and link structure.",
+    "defaultInputs": {
+      "url": "https://acme.com"
+    }
+  },
+  {
+    "id": "data-analyst-agent",
+    "name": "Data Analyst Agent",
+    "category": "Analytics",
+    "summary": "Aggregates agent outputs for statistics and correlations while flagging outliers.",
+    "defaultInputs": {
+      "agentOutputs": []
+    }
+  },
+  {
+    "id": "board-agent",
+    "name": "Strategy Board Agent",
+    "category": "Governance",
+    "summary": "Aggregates mentor metrics and logs to provide governance recommendations.",
+    "defaultInputs": {}
+  },
+  {
+    "id": "vercel-ops-agent",
+    "name": "Vercel Ops Agent",
+    "category": "DevOps",
+    "summary": "Validates Vercel config and reports deploy issues.",
+    "defaultInputs": {
+      "prNumber": 123,
+      "project": "demo",
+      "branch": "main",
+      "triggerDeploy": false,
+      "deploymentStatus": "",
+      "deploymentError": ""
+    }
+  }
+]

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar.jsx';
 import AgentLogList from '../components/AgentLogList.jsx';
 import AgentDetailDrawer from '../components/AgentDetailDrawer.jsx';
+import OnboardingModal from '../components/OnboardingModal.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
 function AgentStatusPanel({ agents = [] }) {
@@ -34,12 +35,24 @@ export default function Dashboard() {
   const [selectedLog, setSelectedLog] = useState(null);
   const [agents, setAgents] = useState([]);
   const [firstVisit, setFirstVisit] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem('dashboardVisited')) {
       setFirstVisit(true);
       localStorage.setItem('dashboardVisited', 'true');
     }
+  }, []);
+
+  useEffect(() => {
+    fetch('/logs')
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.length && !localStorage.getItem('hasSeenOnboarding')) {
+          setShowOnboarding(true);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -83,6 +96,13 @@ export default function Dashboard() {
         </main>
       </div>
       <AgentDetailDrawer log={selectedLog} onClose={() => setSelectedLog(null)} />
+      <OnboardingModal
+        show={showOnboarding}
+        onClose={() => {
+          localStorage.setItem('hasSeenOnboarding', 'true');
+          setShowOnboarding(false);
+        }}
+      />
     </div>
   );
 }
