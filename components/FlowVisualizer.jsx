@@ -41,21 +41,24 @@ function StepNode({ data }) {
   );
 }
 
-export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) {
+export default function FlowVisualizer({ flowId: propFlowId, runId: propRunId, configId: propConfigId, userId = 'demo' }) {
   const query =
     typeof window !== 'undefined'
       ? new URLSearchParams(window.location.search)
       : null;
   const flowId = propFlowId || (query && query.get('flowId')) || 'website-analysis';
+  const runId = propRunId || (query && query.get('runId')) || flowId;
+  const configId = propConfigId || (query && query.get('configId')) || flowId;
 
   const [config, setConfig] = useState(null);
   const [selected, setSelected] = useState(null);
   const [stepLogs, setStepLogs] = useState({});
   const [complete, setComplete] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    loadFlowConfig(flowId).then(setConfig);
-  }, [flowId]);
+    loadFlowConfig(configId).then(setConfig);
+  }, [configId]);
 
   const nodes = useMemo(() => {
     if (!config) return [];
@@ -65,7 +68,7 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
       position: { x: idx * 250, y: idx * 120 },
       data: {
         step,
-        flowId,
+        flowId: runId,
         userId,
         onSelect: setSelected,
         onStatus: (status, log) => {
@@ -76,7 +79,7 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
         }
       }
     }));
-  }, [config, flowId, userId]);
+  }, [config, runId, userId]);
 
   const edges = useMemo(() => {
     if (!config) return [];
@@ -111,8 +114,8 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
   };
 
   const copyLink = () => {
-    const token = btoa(flowId);
-    const link = `${window.location.origin}/flows/${encodeURIComponent(token)}/view?ref=share`;
+    const token = btoa(encodeURIComponent(runId));
+    const link = `${window.location.origin}/flows/${encodeURIComponent(token)}/view`;
     navigator.clipboard.writeText(link);
   };
 
@@ -122,6 +125,8 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
       (s) => stepLogs[s.id] && ['complete', 'error'].includes(stepLogs[s.id].status)
     );
     setComplete(done);
+    const hasError = Object.values(stepLogs).some((l) => l.status === 'error');
+    setFailed(hasError);
   }, [stepLogs, config]);
 
   return (
@@ -146,6 +151,11 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
           >
             Copy Share Link
           </button>
+        </div>
+      )}
+      {failed && !complete && (
+        <div className="absolute inset-x-0 bottom-2 text-center text-red-400 text-sm">
+          Flow failed. Check logs for details.
         </div>
       )}
       <AgentDetailDrawer log={selected} onClose={() => setSelected(null)} />
