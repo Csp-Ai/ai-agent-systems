@@ -20,7 +20,7 @@ import OnboardingOverlay from './OnboardingOverlay.jsx';
 import Gallery from './Gallery.jsx';
 import AgentsPage from '../../pages/Agents.jsx';
 import Dashboard from '../../pages/Dashboard.jsx';
-import FlowViewPage from '../../pages/FlowViewPage.jsx';
+import FlowViewPage from '../pages/FlowViewPage.jsx';
 import Sandbox from './Sandbox.jsx';
 import FeedbackFab from './FeedbackFab.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';

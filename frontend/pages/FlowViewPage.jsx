@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import FlowVisualizer from '../components/FlowVisualizer.jsx';
+import FlowVisualizer from '../FlowVisualizer.jsx';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../frontend/src/firebase.js';
-import loadFlowConfig from '../utils/loadFlowConfig.js';
+import { db } from '../src/firebase.js';
+import loadFlowConfig from '../../utils/loadFlowConfig.js';
 
 export default function FlowViewPage({ flowId }) {
   const [complete, setComplete] = useState(false);
