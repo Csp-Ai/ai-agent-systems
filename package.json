@@ -25,7 +25,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check:deps": "node scripts/dependency-checker.js",
-    "generate": "node scripts/generateFakeMetrics.js"
+    "generate": "node scripts/generateFakeMetrics.js",
+    "release": "standard-version",
+    "deploy:vercel": "vercel --prod --confirm"
   },
   "keywords": [
     "AI",
