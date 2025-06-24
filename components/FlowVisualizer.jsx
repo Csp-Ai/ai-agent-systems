@@ -4,6 +4,7 @@ import 'reactflow/dist/style.css';
 import useAgentStepStatus from '../hooks/useAgentStepStatus.js';
 import loadFlowConfig from '../utils/loadFlowConfig.js';
 import AgentDetailDrawer from './AgentDetailDrawer.jsx';
+import exportFlowResult from '../utils/exportFlowResult.js';
 
 const statusStyles = {
   waiting: 'bg-gray-500',
@@ -19,8 +20,12 @@ function extractInputs(input) {
 }
 
 function StepNode({ data }) {
-  const { step, flowId, userId, onSelect } = data;
+  const { step, flowId, userId, onSelect, onStatus } = data;
   const { status, data: log } = useAgentStepStatus(userId, flowId, step.agent);
+
+  useEffect(() => {
+    onStatus && onStatus(status, log);
+  }, [status, log]);
   return (
     <div
       onClick={() => onSelect({ ...log, agent: step.agent })}
@@ -45,6 +50,8 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
 
   const [config, setConfig] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [stepLogs, setStepLogs] = useState({});
+  const [complete, setComplete] = useState(false);
 
   useEffect(() => {
     loadFlowConfig(flowId).then(setConfig);
@@ -56,7 +63,18 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
       id: step.id,
       type: 'stepNode',
       position: { x: idx * 250, y: idx * 120 },
-      data: { step, flowId, userId, onSelect: setSelected }
+      data: {
+        step,
+        flowId,
+        userId,
+        onSelect: setSelected,
+        onStatus: (status, log) => {
+          setStepLogs(prev => ({
+            ...prev,
+            [step.id]: { ...log, status, agent: step.agent, timestamp: log?.timestamp }
+          }));
+        }
+      }
     }));
   }, [config, flowId, userId]);
 
@@ -80,13 +98,55 @@ export default function FlowVisualizer({ flowId: propFlowId, userId = 'demo' }) 
 
   const nodeTypes = useMemo(() => ({ stepNode: StepNode }), []);
 
+  const downloadReport = () => {
+    const data = exportFlowResult(flowId, config, stepLogs);
+    if (!data) return;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${flowId}-report.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const copyLink = () => {
+    const token = btoa(flowId);
+    const link = `${window.location.origin}/flows/${encodeURIComponent(token)}/view?ref=share`;
+    navigator.clipboard.writeText(link);
+  };
+
+  useEffect(() => {
+    if (!config) return;
+    const done = config.steps.every(
+      (s) => stepLogs[s.id] && ['complete', 'error'].includes(stepLogs[s.id].status)
+    );
+    setComplete(done);
+  }, [stepLogs, config]);
+
   return (
-    <div className="w-full h-[500px]">
+    <div className="w-full h-[500px] relative">
       {config && (
         <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView>
           <Background />
           <Controls />
         </ReactFlow>
+      )}
+      {complete && (
+        <div className="absolute top-2 right-2 flex gap-2 z-10">
+          <button
+            onClick={downloadReport}
+            className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
+          >
+            Download Report
+          </button>
+          <button
+            onClick={copyLink}
+            className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
+          >
+            Copy Share Link
+          </button>
+        </div>
       )}
       <AgentDetailDrawer log={selected} onClose={() => setSelected(null)} />
     </div>
