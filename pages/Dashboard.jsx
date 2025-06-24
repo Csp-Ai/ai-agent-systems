@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar.jsx';
 import AgentLogList from '../components/AgentLogList.jsx';
 import AgentDetailDrawer from '../components/AgentDetailDrawer.jsx';
 import OnboardingModal from '../components/OnboardingModal.jsx';
+import BillingPanel from '../frontend/client/BillingPanel.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 
 function AgentStatusPanel({ agents = [] }) {
@@ -66,6 +67,7 @@ export default function Dashboard() {
     { id: 'logs', label: 'Agent Logs' },
     { id: 'reports', label: 'Reports' },
     { id: 'status', label: 'Live Status' },
+    { id: 'billing', label: 'Billing' },
   ];
 
   const runningAgents = agents.map((a) => ({
@@ -93,6 +95,11 @@ export default function Dashboard() {
           {view === 'logs' && <AgentLogList onSelect={setSelectedLog} />}
           {view === 'status' && <AgentStatusPanel agents={runningAgents} />}
           {view === 'reports' && <div className="p-4">Reports coming soon...</div>}
+          {view === 'billing' && (
+            <div className="p-4">
+              <BillingPanel />
+            </div>
+          )}
         </main>
       </div>
       <AgentDetailDrawer log={selectedLog} onClose={() => setSelectedLog(null)} />

@@ -22,6 +22,7 @@ const runHealthChecks = require('./healthCheck');
 const { appendUsageLog } = require('./usageLogger');
 const { reportSOP } = require('./sopReporter');
 const { recordRun, scheduleWeeklySummary } = require('../utils/agentHealthTracker');
+const { billingMiddleware, incrementUsage, getBillingStatus } = require('./middleware/billing');
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
 
@@ -831,11 +832,6 @@ async function handleExecuteAgent(req, res) {
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
   const orgId = getOrgId(req);
   if (!(await isOrgMember(orgId, uid))) return res.status(403).json({ error: 'forbidden' });
-  const plan = await getUserPlan(uid);
-  const usage = await getUsageCount(uid);
-  if (plan !== 'pro' && usage >= 3) {
-    return res.status(403).json({ error: 'limit' });
-  }
 
   if (!agentName) {
     appendLog({
@@ -858,6 +854,7 @@ async function handleExecuteAgent(req, res) {
     const response = { result: finalResult, allResults: results };
     res.json(response);
     await recordUsage(uid, sessionId || Date.now().toString(), { stepCount: 1, agentRuns: 1 });
+    await incrementUsage(uid, agentName);
     runLifecycleCheck();
     return;
   } catch (err) {
@@ -865,8 +862,8 @@ async function handleExecuteAgent(req, res) {
   }
 }
 
-app.post('/run-agent', handleExecuteAgent);
-app.post('/executeAgent', handleExecuteAgent);
+app.post('/run-agent', billingMiddleware, handleExecuteAgent);
+app.post('/executeAgent', billingMiddleware, handleExecuteAgent);
 
 // Endpoint to email report as PDF attachment
 async function handleSendReport(req, res) {
@@ -985,17 +982,26 @@ app.get('/generate-report/:sessionId', handleGenerateReport);
 app.get('/billing/info', async (req, res) => {
   const uid = await verifyUser(req);
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
-  const plan = await getUserPlan(uid);
-  const usage = await getUsageCount(uid);
+  const statusDoc = await getBillingStatus(uid);
+  const plan = statusDoc.plan || 'free';
+  const usage = statusDoc.usage || {};
+  const daysRemaining = statusDoc.daysRemaining;
+
   const subDoc = await db
     .collection('users')
     .doc(uid)
     .collection('subscription')
     .doc('current')
     .get();
-  const { status = 'inactive', trialEndsAt = null, trialEnding = false } =
-    subDoc.exists ? subDoc.data() : {};
-  res.json({ plan, usage, status, trialEndsAt, trialEnding });
+  const { status = 'inactive' } = subDoc.exists ? subDoc.data() : {};
+  res.json({ plan, usage, status, daysRemaining });
+});
+
+app.get('/billing/usage', async (req, res) => {
+  const uid = await verifyUser(req);
+  if (!uid) return res.status(401).json({ error: 'Unauthorized' });
+  const statusDoc = await getBillingStatus(uid);
+  res.json(statusDoc.usage || {});
 });
 
 app.post('/create-checkout-session', async (req, res) => {
@@ -1270,6 +1276,14 @@ app.post('/api/signup', (req, res) => {
   const dir = path.join(USERS_DIR, uid);
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'persona.json'), JSON.stringify({ email, role }, null, 2));
+  if (db) {
+    db.collection('users')
+      .doc(uid)
+      .collection('billingStatus')
+      .doc('current')
+      .set({ plan: 'free', usage: { totalRuns: 0, agents: {} }, trialStartedAt: new Date().toISOString() })
+      .catch(() => {});
+  }
   res.json({ uid });
 });
 
@@ -1634,10 +1648,12 @@ if (functions && functions.https && functions.https.onCall) {
 
 if (functions && functions.https) {
   exports.translate = functions.https.onRequest(handleTranslate);
-  exports.report = functions.https.onRequest((req, res) => {
+exports.report = functions.https.onRequest((req, res) => {
     const logs = readLogs();
     res.json(logs);
     runLifecycleCheck();
   });
 }
-exports.executeAgent = functions.https.onRequest(handleExecuteAgent);
+exports.executeAgent = functions.https.onRequest((req, res) => {
+  billingMiddleware(req, res, () => handleExecuteAgent(req, res));
+});
