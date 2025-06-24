@@ -24,7 +24,8 @@
     "agent:absorb-knowledge": "node agentLearningLoop.js",
     "build": "vite build",
     "preview": "vite preview",
-    "check:deps": "node scripts/dependency-checker.js"
+    "check:deps": "node scripts/dependency-checker.js",
+    "generate": "node scripts/generateFakeMetrics.js"
   },
   "keywords": [
     "AI",
