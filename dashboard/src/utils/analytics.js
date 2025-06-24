@@ -1,3 +1,5 @@
+/* eslint-env browser */
+
 export function logAgentEvent(agent, event, timeSpent) {
   if (!agent || !event) return;
   fetch('/analytics/agents', {

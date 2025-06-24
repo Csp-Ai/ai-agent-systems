@@ -53,7 +53,7 @@ function checkRoadmap(commits) {
 
 function checkNewAgents(files, metadata) {
   const missing = [];
-  files.forEach(([status, file]) => {
+  files.forEach(([, file]) => {
     if (!file.startsWith('agents/') || !file.endsWith('-agent.js')) return;
     const id = path.basename(file, '.js');
     if (!metadata[id]) missing.push(id);
