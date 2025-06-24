@@ -323,5 +323,48 @@
     "lifecycle": "incubation",
     "locale": "en-US",
     "misaligned": false
+  },
+  "market-research-agent": {
+    "name": "Market Research Agent",
+    "description": "Describes product landscape and competitors.",
+    "inputs": {
+      "industry": "string"
+    },
+    "outputs": {
+      "report": "html",
+      "topCompetitors": "array"
+    },
+    "category": "Research",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": ["en"],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
+  },
+  "gtm-agent": {
+    "name": "GTM Agent",
+    "description": "Suggests a go-to-market plan for a product.",
+    "inputs": {
+      "audienceProfile": "object",
+      "positioning": "string"
+    },
+    "outputs": {
+      "gtmPlan": "string",
+      "timeline": "array"
+    },
+    "category": "Marketing",
+    "enabled": true,
+    "version": "1.0.0",
+    "createdBy": "Csp-Ai",
+    "lastUpdated": "2025-06-19",
+    "critical": false,
+    "locales": ["en"],
+    "lifecycle": "incubation",
+    "locale": "en-US",
+    "misaligned": false
   }
 }
