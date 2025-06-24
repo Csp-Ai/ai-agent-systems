@@ -11,7 +11,7 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import Sidebar from '../../components/Sidebar.jsx';
-import AgentLogList from '../../components/AgentLogList.jsx';
+import AgentLogList from '../components/AgentLogList.jsx';
 import AgentDetailDrawer from '../../components/AgentDetailDrawer.jsx';
 import OnboardingModal from '../../components/OnboardingModal.jsx';
 import BillingPanel from '../client/BillingPanel.jsx';

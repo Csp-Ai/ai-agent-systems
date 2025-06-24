@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { AnimatePresence, motion } from 'framer-motion';
-import { db } from '../frontend/src/firebase';
+import { db } from '../frontend/src/firebase.js';
 import sanitize from '../utils/sanitize.js';
 
 export default function RealTimeLogConsole({ className = '' }) {
