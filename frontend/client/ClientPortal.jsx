@@ -7,6 +7,7 @@ export default function ClientPortal({ reports = [] }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('Reports');
   const [feed, setFeed] = useState([]);
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarded'));
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -14,6 +15,7 @@ export default function ClientPortal({ reports = [] }) {
         const res = await fetch('/audit?limit=20');
         const data = await res.json();
         setFeed(data);
+        if (data.length === 0) setShowOnboarding(true);
       } catch (err) {
         console.error('Failed to load audit logs', err);
       }
@@ -59,6 +61,20 @@ export default function ClientPortal({ reports = [] }) {
 
   return (
     <div className="flex text-white">
+      {showOnboarding && (
+        <div className="fixed inset-x-0 top-0 bg-blue-700 text-white p-3 text-center z-10">
+          Welcome! Run your first agent to see activity logs.
+          <button
+            className="ml-4 underline"
+            onClick={() => {
+              localStorage.setItem('onboarded', '1');
+              setShowOnboarding(false);
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <div className={`bg-gray-800 transition-all duration-300 ${sidebarOpen ? 'w-48' : 'w-12'} overflow-hidden`}>
         <button className="p-2 focus:outline-none" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? '❮' : '❯'}

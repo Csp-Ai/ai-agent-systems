@@ -188,6 +188,7 @@ const SIM_ACTIONS_DIR = path.join(LOG_DIR, 'simulation-actions');
 const NEXT_STEPS_DIR = path.join(LOG_DIR, 'next-steps');
 const DASHBOARD_LOG_FILE = path.join(LOG_DIR, 'dashboard.json');
 const AGENT_DECISIONS_FILE = path.join(LOG_DIR, 'agent-decisions.json');
+const EXPLANATION_DIR = path.join(LOG_DIR, 'explanations');
 
 
 // Ensure reports directory exists so generated PDFs can be served
@@ -251,6 +252,15 @@ function appendLog(entry) {
   const logs = readLogs();
   logs.push(entry);
   writeLogs(logs);
+}
+
+function writeExplanation(agentId, data) {
+  if (!fs.existsSync(EXPLANATION_DIR)) {
+    fs.mkdirSync(EXPLANATION_DIR, { recursive: true });
+  }
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const file = path.join(EXPLANATION_DIR, `${agentId}-${ts}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 async function runLifecycleCheck() {
@@ -593,6 +603,7 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       status: 'success',
       duration: Date.now() - startTime
     });
+    writeExplanation(agentName, { input, result });
     logAgentAction({ sessionId, agent: agentName, input, result });
 
     recordRun(agentName, true, Date.now() - startTime);
@@ -623,13 +634,15 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       timestamp: new Date().toISOString(),
       agent: agentName,
       input,
-      error: err.message
+      status: 'failed',
+      reason: err.message
     });
     appendUsageLog(orgId, agentName, {
       timestamp: new Date().toISOString(),
       userId,
       inputHash,
-      status: 'error',
+      status: 'failed',
+      reason: err.message,
       duration: Date.now() - startTime
     });
     logAgentAction({ sessionId, agent: agentName, input, result: { error: err.message } });
@@ -934,7 +947,15 @@ app.get('/billing/info', async (req, res) => {
   if (!uid) return res.status(401).json({ error: 'Unauthorized' });
   const plan = await getUserPlan(uid);
   const usage = await getUsageCount(uid);
-  res.json({ plan, usage });
+  const subDoc = await db
+    .collection('users')
+    .doc(uid)
+    .collection('subscription')
+    .doc('current')
+    .get();
+  const { status = 'inactive', trialEndsAt = null, trialEnding = false } =
+    subDoc.exists ? subDoc.data() : {};
+  res.json({ plan, usage, status, trialEndsAt, trialEnding });
 });
 
 app.post('/create-checkout-session', async (req, res) => {
@@ -959,16 +980,25 @@ app.post('/create-checkout-session', async (req, res) => {
 
 app.post('/stripe/webhook', async (req, res) => {
   const event = req.body;
-  if (event.type === 'invoice.paid') {
-    const uid = event.data.object.metadata?.uid;
-    if (uid) {
-      await db
-        .collection('users')
-        .doc(uid)
-        .collection('subscription')
-        .doc('current')
-        .set({ plan: 'pro', status: 'active' }, { merge: true });
-    }
+  const uid = event.data?.object?.metadata?.uid;
+  const subRef = uid
+    ? db.collection('users').doc(uid).collection('subscription').doc('current')
+    : null;
+
+  if (event.type === 'invoice.paid' && subRef) {
+    await subRef.set({ plan: 'pro', status: 'active' }, { merge: true });
+  }
+
+  if (event.type === 'customer.subscription.trial_will_end' && subRef) {
+    await subRef.set({ trialEnding: true }, { merge: true });
+  }
+
+  if (event.type === 'invoice.payment_failed' && subRef) {
+    await subRef.set({ status: 'past_due' }, { merge: true });
+  }
+
+  if (event.type === 'customer.subscription.deleted' && subRef) {
+    await subRef.set({ status: 'canceled' }, { merge: true });
   }
   res.json({ received: true });
 });

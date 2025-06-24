@@ -1,4 +1,7 @@
 name: Firebase Deploy
+# Deploys serverless functions for the .ai platform.
+# Separation between Cloud Run and Firebase allows modular
+# scaling as usage grows across subscription tiers.
 
 on:
   push:
