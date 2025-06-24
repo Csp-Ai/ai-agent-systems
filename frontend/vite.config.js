@@ -36,7 +36,7 @@ export default defineConfig({
     postcss: rootPostCssConfig,
   },
   build: {
-    outDir: 'build',
+    outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       input: indexHtml,

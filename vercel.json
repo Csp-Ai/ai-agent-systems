@@ -1,16 +1,6 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      },
-      "buildCommand": "npm install --prefix .. && npm run build"
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
