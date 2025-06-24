@@ -90,7 +90,9 @@ const Welcome = () => {
     e.preventDefault();
     const data = { company, url, email };
     localStorage.setItem('onboarding', JSON.stringify(data));
-    window.location.href = '/dashboard';
+    if (typeof window !== 'undefined') {
+      window.location.href = '/dashboard';
+    }
   };
 
   return (

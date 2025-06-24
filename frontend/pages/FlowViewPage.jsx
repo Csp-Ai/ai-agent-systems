@@ -32,7 +32,9 @@ export default function FlowViewPage({ flowId }) {
             body: JSON.stringify({})
           });
           const ck = await r.json();
-          if (ck.url) window.location.href = ck.url;
+          if (ck.url && typeof window !== 'undefined') {
+            window.location.href = ck.url;
+          }
         }
       } catch (err) {
         console.error('Billing check failed', err);
