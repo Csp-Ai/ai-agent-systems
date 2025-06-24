@@ -1,1 +1,5 @@
-Sample learning log
+{"agent":"beta","metric":"accuracy","value":0.75,"timestamp":"2025-06-24T08:20:26.867Z"}
+{"agent":"alpha","metric":"latency","value":161,"timestamp":"2025-06-24T08:20:35.706Z"}
+{"agent":"gamma","metric":"latency","value":730,"timestamp":"2025-06-24T08:20:46.199Z"}
+{"agent":"gamma","metric":"latency","value":766,"timestamp":"2025-06-24T08:20:54.042Z"}
+{"agent":"beta","metric":"accuracy","value":0.79,"timestamp":"2025-06-24T08:21:02.013Z"}
