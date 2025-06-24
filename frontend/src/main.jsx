@@ -21,6 +21,7 @@ import ErrorBoundary from './ErrorBoundary.jsx';
 const path = window.location.pathname;
 
 function App() {
+  console.log("Path:", path);
   try {
     const isDemo = path.startsWith('/demo');
     const isGallery = path.startsWith('/gallery');
@@ -57,6 +58,7 @@ function App() {
     };
 
     let content;
+    let unknownRoute = false;
     if (isDemo) {
       content = <DemoPage />;
     } else if (isGallery) {
@@ -75,16 +77,19 @@ function App() {
       content = <FlowViewPage flowId={decoded} />;
     } else if (isSandbox) {
       content = <Sandbox />;
-    } else {
+    } else if (path === '/' || path === '') {
       content = (
         <>
           <LandingPage />
           <DevToolsPanel />
         </>
       );
+    } else {
+      unknownRoute = true;
+      content = <LandingPage />;
     }
 
-    console.log({ isGallery, isDemo, isUseCases, content });
+    console.log({ isGallery, isDemo, isUseCases, unknownRoute, content });
 
     if (!content) {
       content = <LandingPage />;
@@ -92,6 +97,7 @@ function App() {
 
     return (
       <>
+        {unknownRoute && <h1>Unknown route: {path}</h1>}
         {content}
         <FeedbackFab />
         <AnimatePresence>
