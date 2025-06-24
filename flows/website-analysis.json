@@ -1,0 +1,40 @@
+{
+  "id": "website-analysis",
+  "steps": [
+    {
+      "id": "scrape",
+      "agent": "website-scanner-agent",
+      "input": { "url": "$input.url" },
+      "onError": "abort"
+    },
+    {
+      "id": "feature-extract",
+      "agent": "data-analyst-agent",
+      "input": { "agentOutputs": ["$steps.scrape.output"] },
+      "onError": "continue"
+    },
+    {
+      "id": "market-score",
+      "agent": "market-research-agent",
+      "input": { "analysis": "$steps.feature-extract.output" },
+      "onError": "continue"
+    },
+    {
+      "id": "refine",
+      "agent": "data-analyst-agent",
+      "input": {
+        "agentOutputs": [
+          "$steps.feature-extract.output",
+          "$steps.market-score.output"
+        ]
+      },
+      "onError": "continue"
+    },
+    {
+      "id": "plan",
+      "agent": "gtm-agent",
+      "input": { "analysis": "$steps.refine.output" },
+      "onError": "abort"
+    }
+  ]
+}
