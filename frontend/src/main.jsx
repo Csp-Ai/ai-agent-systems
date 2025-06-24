@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { AnimatePresence } from 'framer-motion';
 import './index.css';
 
+const query = new URLSearchParams(window.location.search);
+const pending = localStorage.getItem('pendingFlowToken');
+if (query.get('success') === '1' && pending) {
+  localStorage.removeItem('pendingFlowToken');
+  window.location.replace(`/flows/${encodeURIComponent(pending)}/view`);
+}
+
 import LandingPage from './LandingPage.jsx';
 import DevToolsPanel from './DevToolsPanel.jsx';
 import DemoPage from './DemoPage.jsx';

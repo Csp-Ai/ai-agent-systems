@@ -1511,7 +1511,7 @@ if (process.env.NODE_ENV !== 'production') {
     res.json(files);
   });
 
-  app.post('/run-flow', async (req, res) => {
+  app.post('/run-flow', billingMiddleware, async (req, res) => {
     const { flowId = '', userId = 'test-user' } = req.body || {};
     if (!flowId) return res.status(400).json({ error: 'flowId required' });
     let url = '';
