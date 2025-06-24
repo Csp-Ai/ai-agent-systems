@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { existsSync, writeFileSync } from 'fs'
-import { resolve } from 'path'
+import path, { resolve } from 'path'
 
 const indexHtml = (() => {
   const index = resolve(__dirname, 'index.html')
@@ -29,6 +29,9 @@ export default defineConfig({
   },
   ssr: {
     noExternal: ['firebase'],
+  },
+  css: {
+    postcss: path.resolve(__dirname, '../postcss.config.js'),
   },
   build: {
     outDir: 'build',
