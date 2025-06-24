@@ -46,12 +46,33 @@ jobs:
 
       - run: npm run lint --if-present
         if: steps.changes.outputs.skip != 'true'
+        id: lint
 
       - run: npm test --if-present
         if: steps.changes.outputs.skip != 'true'
+        id: tests
 
       - run: npm run build --if-present
         if: steps.changes.outputs.skip != 'true'
+        id: build
 
       - run: node scripts/constitution-check.js
         if: steps.changes.outputs.skip != 'true'
+
+      - name: Simulate Stripe webhooks
+        if: steps.changes.outputs.skip != 'true'
+        run: node scripts/testStripeWebhooks.js
+
+      - name: Write CI status
+        if: always()
+        run: node scripts/write-ci-status.js
+        env:
+          LINT_STATUS: ${{ steps.lint.outcome }}
+          TEST_STATUS: ${{ steps.tests.outcome }}
+          BUILD_STATUS: ${{ steps.build.outcome }}
+
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ci-status
+          path: reports/ci-status.json

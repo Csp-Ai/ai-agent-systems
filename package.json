@@ -18,6 +18,7 @@
     "postdeploy:cloudrun": "node scripts/cloudrun-postdeploy.js",
     "postdeploy:summary": "node scripts/postDeploySummary.js",
     "postdeploy:all": "node scripts/postDeploySummary.js",
+    "lint": "eslint .",
     "process-log": "node agents/process-guardian-agent.js",
     "cleanup:reports": "node functions/cleanupOldReports.js",
     "agent:absorb-knowledge": "node agentLearningLoop.js",
@@ -51,11 +52,13 @@
     "pdf-lib": "^1.17.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "reactflow": "^11.11.4"
+    "reactflow": "^11.11.4",
+    "stripe": "^14.21.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.5.2",
     "eslint": "^8.50.0",
+    "supertest": "^6.3.3",
     "vite": "^6.3.5"
   }
 }

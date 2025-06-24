@@ -25,8 +25,13 @@ const { recordRun, scheduleWeeklySummary } = require('../utils/agentHealthTracke
 const { admin, db } = require('../firebase');
 const stripe = require('stripe')(process.env.STRIPE_KEY || '');
 
-// Load environment variables from .env if present
-dotenv.config();
+// Load environment variables from .env or .env.production in production
+const prodEnv = path.join(__dirname, '..', '.env.production');
+if (process.env.NODE_ENV === 'production' && fs.existsSync(prodEnv)) {
+  dotenv.config({ path: prodEnv });
+} else {
+  dotenv.config();
+}
 
 const LT_URL = process.env.TRANSLATE_URL || 'https://libretranslate.de';
 const LT_KEY = process.env.TRANSLATE_KEY || '';
@@ -260,6 +265,21 @@ function writeExplanation(agentId, data) {
   }
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
   const file = path.join(EXPLANATION_DIR, `${agentId}-${ts}.json`);
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function writeFailureStatus(agentId, reason) {
+  const file = path.join(LOG_DIR, `${agentId}-failure.json`);
+  let data = [];
+  if (fs.existsSync(file)) {
+    try {
+      data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (!Array.isArray(data)) data = [];
+    } catch {
+      data = [];
+    }
+  }
+  data.push({ timestamp: new Date().toISOString(), status: 'failed', reason });
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
@@ -576,7 +596,25 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       });
     }
 
-    result = await Promise.resolve(agent.run({ ...input, dependencies: depResults }));
+    const timeoutMs = parseInt(process.env.AGENT_TIMEOUT || '55000', 10);
+    const maxRetries = parseInt(process.env.AGENT_RETRIES || '1', 10);
+    let attempts = 0;
+    const runAgent = () => Promise.resolve(agent.run({ ...input, dependencies: depResults }));
+    while (true) {
+      attempts += 1;
+      try {
+        result = await Promise.race([
+          runAgent(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeoutMs))
+        ]);
+        break;
+      } catch (err) {
+        if (err.message === 'timeout' && attempts <= maxRetries) {
+          continue;
+        }
+        throw err;
+      }
+    }
 
     if (sessionId !== undefined && step !== undefined) {
       updateSession(sessionId, step, agentName, 'completed');
@@ -637,6 +675,8 @@ async function executeAgent(agentName, input, results = {}, stack = [], sessionI
       status: 'failed',
       reason: err.message
     });
+    writeExplanation(agentName, { input, error: err.message });
+    writeFailureStatus(agentName, err.message);
     appendUsageLog(orgId, agentName, {
       timestamp: new Date().toISOString(),
       userId,
@@ -1563,32 +1603,41 @@ app.get('/health-check', async (req, res) => {
 
 const { functions } = require('../firebase');
 
-module.exports.app = functions.https.onRequest(app);
+if (functions && functions.https) {
+  module.exports.app = functions.https.onRequest(app);
+} else {
+  module.exports.app = app;
+}
+module.exports.expressApp = app;
 
-exports.runGuardian = functions.https.onCall(async (data) => {
-  const agent = require('../agents/guardian-agent');
-  return await agent.run(data);
-});
+if (functions && functions.https && functions.https.onCall) {
+  exports.runGuardian = functions.https.onCall(async (data) => {
+    const agent = require('../agents/guardian-agent');
+    return await agent.run(data);
+  });
 
-exports.boardAgent = functions.https.onCall(async (data) => {
-  const agent = require('../agents/board-agent');
-  return await agent.run(data);
-});
+  exports.boardAgent = functions.https.onCall(async (data) => {
+    const agent = require('../agents/board-agent');
+    return await agent.run(data);
+  });
 
-exports.evaluateLifecycle = functions.https.onCall(async () => {
-  const { evaluate } = require('../scripts/evaluate-lifecycle');
-  return await evaluate();
-});
+  exports.evaluateLifecycle = functions.https.onCall(async () => {
+    const { evaluate } = require('../scripts/evaluate-lifecycle');
+    return await evaluate();
+  });
 
-exports.constitutionCheck = functions.https.onCall(async () => {
-  require('../scripts/constitution-check');
-  return { result: 'done' };
-});
+  exports.constitutionCheck = functions.https.onCall(async () => {
+    require('../scripts/constitution-check');
+    return { result: 'done' };
+  });
+}
 
-exports.translate = functions.https.onRequest(handleTranslate);
-exports.report = functions.https.onRequest((req, res) => {
-  const logs = readLogs();
-  res.json(logs);
-  runLifecycleCheck();
-});
+if (functions && functions.https) {
+  exports.translate = functions.https.onRequest(handleTranslate);
+  exports.report = functions.https.onRequest((req, res) => {
+    const logs = readLogs();
+    res.json(logs);
+    runLifecycleCheck();
+  });
+}
 exports.executeAgent = functions.https.onRequest(handleExecuteAgent);

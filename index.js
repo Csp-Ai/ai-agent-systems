@@ -1,5 +1,13 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const dotenv = require('dotenv');
+
+if (process.env.NODE_ENV === 'production' && fs.existsSync(path.join(__dirname, '.env.production'))) {
+  dotenv.config({ path: path.join(__dirname, '.env.production') });
+} else {
+  dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 8080;
