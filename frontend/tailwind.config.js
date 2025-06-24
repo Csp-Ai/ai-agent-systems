@@ -1,10 +1,2 @@
-module.exports = {
-  content: [
-    './index.html',
-    './src/**/*.{js,jsx,ts,tsx}'
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
+const path = require('path')
+module.exports = require(path.resolve(__dirname, '..', 'tailwind.config.js'))
