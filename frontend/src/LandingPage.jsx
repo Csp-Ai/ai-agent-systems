@@ -23,6 +23,7 @@ const LandingPage = () => {
   const [emailSent, setEmailSent] = useState(false);
   const [logMessages, setLogMessages] = useState([]);
   const [registeredAgents, setRegisteredAgents] = useState([]);
+  const [landingUrl, setLandingUrl] = useState('');
 
   useEffect(() => {
     const fetchAgents = async () => {
@@ -113,6 +114,20 @@ const LandingPage = () => {
     setStepStatus(analysisSteps.map((_, i) => (i === 0 ? 'active' : 'pending')));
   };
 
+  const handleFlowSubmit = async (e) => {
+    e.preventDefault();
+    if (!landingUrl) return;
+    const encoded = btoa(encodeURIComponent(landingUrl));
+    try {
+      await fetch('/run-flow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flowId: encoded })
+      });
+    } catch {}
+    window.location.href = `/flows/${encodeURIComponent(encoded)}/view`;
+  };
+
   const subscribeToLogs = () => {
     const q = query(collection(db, 'logs'), orderBy('timestamp'));
     return onSnapshot(q, snap => {
@@ -166,6 +181,24 @@ const LandingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="relative z-10">
+        <section className="py-20 text-center">
+          <h1 className="text-4xl font-bold text-white mb-4">Analyze Your Website</h1>
+          <form onSubmit={handleFlowSubmit} className="max-w-xl mx-auto flex">
+            <input
+              type="text"
+              value={landingUrl}
+              onChange={(e) => setLandingUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="flex-1 p-2 rounded-l text-black"
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 rounded-r"
+            >
+              Analyze
+            </button>
+          </form>
+        </section>
         <section className="px-6 py-20 text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl font-bold text-white mb-6">Start Your AI Analysis</h1>

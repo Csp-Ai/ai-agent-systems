@@ -72,13 +72,21 @@ async function billingMiddleware(req, res, next) {
   if (status.trialStartedAt && daysRemaining < 0 && plan !== 'pro') {
     return res
       .status(402)
-      .json({ error: 'trial_expired', message: 'Trial expired. Upgrade required.' });
+      .json({
+        error: 'trial_expired',
+        message: 'Trial expired. Upgrade required.',
+        redirect: '/create-checkout-session'
+      });
   }
 
   if (plan !== 'pro' && runs >= FREE_LIMIT) {
     return res
       .status(402)
-      .json({ error: 'upgrade', message: 'Plan limit reached. Upgrade required.' });
+      .json({
+        error: 'upgrade',
+        message: 'Plan limit reached. Upgrade required.',
+        redirect: '/create-checkout-session'
+      });
   }
 
   req.billing.daysRemaining = daysRemaining;
