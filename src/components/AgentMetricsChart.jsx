@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -13,6 +13,8 @@ import {
 export default function AgentMetricsChart() {
   const [data, setData] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const fetchData = () => {
@@ -34,10 +36,13 @@ export default function AgentMetricsChart() {
           });
           setData(Object.values(byTime));
           setAgents([...new Set(entries.map(e => e.agent))]);
+          setLastUpdated(new Date());
         });
     };
 
     fetchData();
+    intervalRef.current = setInterval(fetchData, 10000); // poll every 10s
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   return (
@@ -61,6 +66,9 @@ export default function AgentMetricsChart() {
           ))}
         </LineChart>
       </ResponsiveContainer>
+      <p className="text-xs text-gray-500 mt-2">
+        Last updated: {lastUpdated ? lastUpdated.toLocaleTimeString() : 'N/A'}
+      </p>
     </div>
   );
 }
