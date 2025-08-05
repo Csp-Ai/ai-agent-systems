@@ -1,5 +1,6 @@
 const express = require('express');
 const agentMetadata = require('../agents/agent-metadata.json');
+const { validateAgentMetadata } = require('../utils/metadataValidator');
 const { getRegisteredAgents } = require('../utils/agentTools');
 const { translateOutput } = require('./translation');
 const { verifyUser, isOrgMember, getOrgId, recordUsage } = require('./auth');
@@ -10,6 +11,9 @@ const { appendLog } = require('./logging');
  * Agent orchestration routes.
  * Executes agents and handles dependency resolution.
  */
+// validate metadata on load
+validateAgentMetadata(agentMetadata);
+
 let registeredAgents = getRegisteredAgents();
 
 async function executeAgent(agentName, input, results = {}, stack = []) {
@@ -27,8 +31,8 @@ async function executeAgent(agentName, input, results = {}, stack = []) {
     depResults[dep] = await executeAgent(dep, input, results, stack);
   }
   const agent = registeredAgents[agentName];
-  if (!agent) {
-    throw new Error(`Agent '${agentName}' implementation not found`);
+  if (!agent || typeof agent.run !== 'function' || agent.run.constructor.name !== 'AsyncFunction') {
+    throw new Error(`Agent '${agentName}' implementation not found or invalid`);
   }
   const result = await agent.run({ ...input, dependencies: depResults });
   results[agentName] = result;

@@ -112,8 +112,12 @@ async function run(options = {}) {
     throw err;
   }
 
-  if (!agent || typeof agent.run !== 'function') {
-    const msg = `Agent ${agentName} does not export a run() function`;
+  if (
+    !agent ||
+    typeof agent.run !== 'function' ||
+    agent.run.constructor.name !== 'AsyncFunction'
+  ) {
+    const msg = `Agent ${agentName} does not export a valid async run() function`;
     console.error(chalk.red(msg));
     throw new Error(msg);
   }
