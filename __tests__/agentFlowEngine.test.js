@@ -2,7 +2,8 @@ const fs = require('fs');
 const path = require('path');
 
 jest.mock('../functions/db', () => ({
-  writeDocument: jest.fn().mockResolvedValue()
+  writeDocument: jest.fn().mockResolvedValue(),
+  appendToCollection: jest.fn().mockResolvedValue()
 }));
 const { writeDocument } = require('../functions/db');
 

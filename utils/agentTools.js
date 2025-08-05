@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const loadAgents = require('../functions/loadAgents');
+const { validateAgentEntry } = require('./metadataValidator');
 
 const agentsDir = path.join(__dirname, '..', 'agents');
 const metadataPath = path.join(agentsDir, 'agent-metadata.json');
@@ -30,8 +31,15 @@ function registerAgentFromForm({ agentId, displayName, description, version = '1
     enabled: true,
     entryPoint: entryPoint || `${agentId}.js`,
     createdBy: 'dashboard',
-    lastUpdated: new Date().toISOString().split('T')[0]
+    lastUpdated: new Date().toISOString().split('T')[0],
+    inputs: {},
+    outputs: {},
+    critical: false,
+    locales: ['en'],
+    locale: 'en-US',
+    misaligned: false
   };
+  validateAgentEntry(agentId, metadata[agentId]);
   fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
   const filePath = path.join(agentsDir, `${agentId}.js`);
   if (!fs.existsSync(filePath)) {

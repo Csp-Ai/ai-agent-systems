@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Agent Metadata",
+  "type": "object",
+  "required": [
+    "name",
+    "description",
+    "inputs",
+    "outputs",
+    "category",
+    "enabled",
+    "version",
+    "createdBy",
+    "lastUpdated",
+    "critical",
+    "locales",
+    "locale",
+    "misaligned"
+  ],
+  "properties": {
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "inputs": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "dependsOn": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "category": { "type": "string" },
+    "enabled": { "type": "boolean" },
+    "version": { "type": "string" },
+    "createdBy": { "type": "string" },
+    "lastUpdated": { "type": "string" },
+    "critical": { "type": "boolean" },
+    "locales": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "public": { "type": "boolean" },
+    "lifecycle": { "type": "string" },
+    "status": { "type": "string" },
+    "locale": { "type": "string" },
+    "misaligned": { "type": "boolean" },
+    "visibleToDemo": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}
