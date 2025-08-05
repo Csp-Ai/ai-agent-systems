@@ -16,7 +16,7 @@ function getBackendRoutes() {
 }
 
 function getFrontendRoutes() {
-  const txt = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'src', 'main.jsx'), 'utf8');
+  const txt = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.jsx'), 'utf8');
   const regex = /path\.startsWith\(['"`]([^'"`]+)['"`]\)/g;
   const seen = {};
   const collisions = [];

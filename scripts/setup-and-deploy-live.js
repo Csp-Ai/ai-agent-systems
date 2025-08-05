@@ -107,7 +107,7 @@ function openUrl(url) {
 
 function ensureHostingDir() {
   const configPath = path.join(rootDir, 'firebase.json');
-  const expected = 'public/dashboard';
+  const expected = 'dist';
   const data = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   if (data.hosting?.public !== expected) {
     log(color.yellow, `⚠️  Updating firebase.json hosting public directory to ${expected}`);
@@ -156,19 +156,14 @@ async function main() {
   const hostingDir = ensureHostingDir();
 
   runStep('Firebase setup', 'npm run setup:firebase', { retryAuth: true, retries: 2 });
-  const buildOutput = runStep('Deploy dashboard', 'npm run deploy:dashboard', {
-    capture: true,
-    retryAuth: true,
-    retries: 2,
-  });
-
-  const sizeRegex = /public\/dashboard\/[^\s]+\s+\d+\.\d+ kB.*$/gm;
-  const sizeLines = (buildOutput.match(sizeRegex) || []).map(l => l.trim());
   const deployOutput = runStep('Firebase deploy', 'npm run deploy', {
     capture: true,
     retryAuth: true,
     retries: 2,
   });
+
+  const sizeRegex = /dist\\/[^\s]+\s+\d+\.\d+ kB.*$/gm;
+  const sizeLines = (deployOutput.match(sizeRegex) || []).map(l => l.trim());
   const hostingMatch = deployOutput.match(/Hosting URL[:\s]+(https?:\/\/[^\s]+)/i);
   const url = hostingMatch ? hostingMatch[1] : (deployOutput.match(/https?:\/\/[^\s]+/) || [])[0];
   if (url) {

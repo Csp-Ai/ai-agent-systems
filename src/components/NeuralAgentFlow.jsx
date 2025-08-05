@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, onSnapshot } from 'firebase/firestore';
 import AgentDetailDrawer from './AgentDetailDrawer.jsx';
-import { db } from '../frontend/src/firebase.js';
+import { db } from '@/firebase.js';
 
 const statusStyles = {
   waiting: 'border-gray-400 text-gray-400',

@@ -3,7 +3,7 @@
     "source": "functions"
   },
   "hosting": {
-    "public": "public/dashboard",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",

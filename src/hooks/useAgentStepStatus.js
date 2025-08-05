@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../frontend/src/firebase.js';
+import { db } from '@/firebase.js';
 
 export default function useAgentStepStatus(userId, flowId, agentName) {
   const [data, setData] = useState({ status: 'waiting' });

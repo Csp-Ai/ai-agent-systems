@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { db } from '../src/firebase.js';
-import AgentLogItem from '../../components/AgentLogItem.jsx';
+import { db } from '@/firebase.js';
+import AgentLogItem from './AgentLogItem.jsx';
 
 export default function AgentLogList({ onSelect }) {
   const [logs, setLogs] = useState([]);

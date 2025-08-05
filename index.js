@@ -12,7 +12,7 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(path.join(__dirname, 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-const distDir = path.join(__dirname, 'frontend', 'dist');
+const distDir = path.join(__dirname, 'dist');
 app.use(express.static(distDir));
 
 // Health check endpoint for Cloud Run

@@ -11,7 +11,6 @@ const fix = argv.fix || false;
 
 const ROOT = path.join(__dirname, '..');
 const TARGETS = [
-  { name: 'frontend', dir: path.join(ROOT, 'frontend'), pkg: path.join(ROOT, 'frontend', 'package.json') },
   { name: 'functions', dir: path.join(ROOT, 'functions'), pkg: path.join(ROOT, 'functions', 'package.json') },
   { name: 'agents', dir: path.join(ROOT, 'agents'), pkg: path.join(ROOT, 'package.json') },
 ];

@@ -31,11 +31,11 @@ try {
 }
 
 try {
-  logInfo('Building and copying dashboard...');
-  execSync('node scripts/deploy-dashboard.js', { stdio: 'inherit' });
-  logSuccess('Dashboard build step complete.');
+  logInfo('Building frontend...');
+  execSync('npm run build', { stdio: 'inherit' });
+  logSuccess('Frontend build complete.');
 } catch (err) {
-  logFailure(`Failed to deploy dashboard: ${err.message}`);
+  logFailure(`Failed to build frontend: ${err.message}`);
   process.exit(1);
 }
 
