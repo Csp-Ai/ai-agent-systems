@@ -4,8 +4,7 @@ const { execSync } = require('child_process');
 
 const META_FILE = path.join(__dirname, '..', 'agents', 'agent-metadata.json');
 const INDEX_FILE = path.join(__dirname, '..', 'functions', 'index.js');
-const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
-const DASHBOARD_DIR = path.join(__dirname, '..', 'dashboard', 'src');
+const FRONTEND_DIR = path.join(__dirname, '..', 'src');
 const PROCESS_LOG = path.join(__dirname, '..', 'PROCESS_LOG.md');
 const OUTPUT_MD = path.join(__dirname, '..', 'docs', 'executive-summary.md');
 
@@ -25,7 +24,6 @@ function generate() {
   const numAgents = Object.keys(metadata).length;
   const numEndpoints = countEndpoints();
   const numFrontend = countComponents(FRONTEND_DIR);
-  const numDashboard = countComponents(DASHBOARD_DIR);
   const merges = parseInt(execSync('git log --oneline --merges | wc -l').toString().trim(), 10);
   const processLog = fs.existsSync(PROCESS_LOG) ? fs.readFileSync(PROCESS_LOG, 'utf8').trim() : '';
 
@@ -41,7 +39,6 @@ function generate() {
     `- Total Agents: ${numAgents}\n` +
     `- API Endpoints: ${numEndpoints}\n` +
     `- Frontend Components: ${numFrontend}\n` +
-    `- Dashboard Components: ${numDashboard}\n` +
     `- Commits Merged: ${merges}\n\n` +
     `## Recent Process Log\n\n${processLog}\n\n` +
     `## Recommended Next Tasks\n\n` +

@@ -90,8 +90,6 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
-frontend/build/
-
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js
@@ -141,5 +139,3 @@ firebase-service-account.json
 serviceAccountKey.json
 *.service-account.json
 
-# Dashboard build output
-public/dashboard/

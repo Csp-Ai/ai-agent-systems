@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import AgentCard from '../../components/AgentCard';
-import LiveAgentGraph from '../../components/LiveAgentGraph';
-import AgentCluster from '../../components/AgentCluster';
-import PricingTiers from '../../components/PricingTiers';
-import { useTheme } from '../../context/ThemeContext';
-import TourOverlay from '../../components/TourOverlay';
+import AgentCard from '@/components/AgentCard.jsx';
+import LiveAgentGraph from '@/components/LiveAgentGraph.jsx';
+import AgentCluster from '@/components/AgentCluster.jsx';
+import PricingTiers from '@/components/PricingTiers.jsx';
+import { useTheme } from '@/components/ThemeContext.jsx';
+import TourOverlay from '@/components/TourOverlay.jsx';
 
 const pricing = [
   { title: 'Basic', price: 'Free', features: ['1 agent', 'Community support'] },
