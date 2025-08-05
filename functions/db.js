@@ -1,4 +1,4 @@
-const { admin, db } = require('../firebase');
+const { db } = require('../firebase');
 const chalk = require('chalk');
 
 if (!db) {
