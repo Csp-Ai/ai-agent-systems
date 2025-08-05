@@ -1,22 +1,9 @@
 const fs = require('fs');
 const path = require('path');
-const { writeDocument } = require('../functions/db');
-
-const LOG_DIR = path.join(__dirname, '..', 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'logs.json');
+const { writeDocument, appendToCollection } = require('../functions/db');
 
 function appendLog(entry) {
-  let logs = [];
-  try {
-    if (fs.existsSync(LOG_FILE)) {
-      logs = JSON.parse(fs.readFileSync(LOG_FILE, 'utf8'));
-    }
-  } catch {
-    logs = [];
-  }
-  logs.push(entry);
-  if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
-  fs.writeFileSync(LOG_FILE, JSON.stringify(logs, null, 2));
+  appendToCollection('logs', entry).catch(() => {});
 }
 
 function loadFlowConfig(flowId) {
