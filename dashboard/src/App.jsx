@@ -103,18 +103,17 @@ function RouterShell() {
             <Route path="/departments/:dept" element={<DepartmentRouter />} />
             <Route path="/admin" element={<AgentAdminConsole />} />
           </Routes>
-        </main>
-      </div>
-  <FeedbackFab />
-}
+          </main>
+        </div>
+        <FeedbackFab />
+      </>
+    );
+  }
 
 function Shell() {
   return (
     <Router basename="/dashboard">
       <RouterShell />
-    </Router>
-  );
-}
     </Router>
   );
 }

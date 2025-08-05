@@ -63,24 +63,21 @@ export default function AgentGallery() {
               <li>Lifecycle: {a.lifecycle}</li>
               <li>Version: {a.version}</li>
             </ul>
-            <div className="px-4 pb-4 flex gap-2">
-  <Link
-    to={`/agents/${a.id}`}
-    onClick={() => { logAgentEvent(a, 'click'); setActive(a); }}
-    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded text-center"
-  >
-    View
-  </Link>
-              >
-                Persona
-              </Link>
-              <button
-                onClick={() => { logAgentEvent(a, 'click'); setActive(a); }}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded"
-              >
-                Test Agent
-              </button>
-            </div>
+              <div className="px-4 pb-4 flex gap-2">
+                <Link
+                  to={`/agents/${a.id}`}
+                  onClick={() => { logAgentEvent(a, 'click'); setActive(a); }}
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-2 py-1 rounded text-center"
+                >
+                  View
+                </Link>
+                <button
+                  onClick={() => { logAgentEvent(a, 'click'); setActive(a); }}
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm px-2 py-1 rounded"
+                >
+                  Test Agent
+                </button>
+              </div>
           </motion.div>
         ))}
       </div>
