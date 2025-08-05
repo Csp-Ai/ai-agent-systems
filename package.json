@@ -8,7 +8,7 @@
   "author": "Csp-Ai",
   "scripts": {
     "start": "node index.js",
-    "dev": "npx vite",
+    "dev": "vite",
     "test": "jest",
     "setup:firebase": "node scripts/firebase-setup.js",
     "deploy": "node scripts/deploy-to-firebase.js",
