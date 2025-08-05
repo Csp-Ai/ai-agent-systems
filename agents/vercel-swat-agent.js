@@ -1,5 +1,3 @@
-const fs = require('fs');
-const path = require('path');
 const fetch = require('node-fetch');
 const { execSync } = require('child_process');
 const admin = require('firebase-admin');
@@ -17,28 +15,9 @@ if (!admin.apps.length) {
 
 const db = admin.apps.length ? admin.firestore() : null;
 
-const LOG_DIR = path.join(__dirname, '..', 'logs');
-const LOG_FILE = path.join(LOG_DIR, 'logs.json');
-
-function readJson(file, def) {
-  try {
-    if (!fs.existsSync(file)) return def;
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch {
-    return def;
-  }
-}
-
-function writeJson(file, data) {
-  const dir = path.dirname(file);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
 function appendLog(entry) {
-  const logs = readJson(LOG_FILE, []);
-  logs.push({ timestamp: new Date().toISOString(), ...entry });
-  writeJson(LOG_FILE, logs);
+  if (!db) return;
+  db.collection('logs').add({ timestamp: new Date().toISOString(), ...entry }).catch(() => {});
 }
 
 async function checkEndpoint(url, timeoutMs = 5000) {
