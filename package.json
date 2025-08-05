@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "npx vite",
-    "test": "echo \"No tests configured yet\" && exit 0",
+    "test": "jest",
     "setup:firebase": "node scripts/firebase-setup.js",
     "deploy:dashboard": "node scripts/deploy-dashboard.js",
     "deploy": "node scripts/deploy-to-firebase.js",
@@ -72,6 +72,7 @@
     "postcss": "^8.5.6",
     "supertest": "^6.3.3",
     "tailwindcss": "^4.1.10",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "jest": "^29.7.0"
   }
 }
