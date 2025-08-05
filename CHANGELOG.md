@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/Csp-Ai/ai-agent-systems/compare/v1.2.2...v1.3.0) (2025-08-05)
+
+
+### Features
+
+* add metadata schema and validation tests ([8ce5fe9](https://github.com/Csp-Ai/ai-agent-systems/commit/8ce5fe9a20ba7749899d89024b443bbb2870e837))
+
 ### [1.2.2](https://github.com/Csp-Ai/ai-agent-systems/compare/v1.2.1...v1.2.2) (2025-08-05)
 
 ### [1.2.1](https://github.com/Csp-Ai/ai-agent-systems/compare/v1.2.0...v1.2.1) (2025-06-24)
