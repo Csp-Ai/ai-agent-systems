@@ -48,7 +48,7 @@ jobs:
         if: steps.changes.outputs.skip != 'true'
         id: lint
 
-      - run: npm test --if-present
+      - run: npm test
         if: steps.changes.outputs.skip != 'true'
         id: tests
 
