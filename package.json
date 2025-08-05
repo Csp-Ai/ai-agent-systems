@@ -1,6 +1,6 @@
 {
   "name": "ai-agent-systems",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Modular AI agent systems for streamlining operations, automating tasks, and enhancing decision-making. Built by a strategy-led, builder-driven team.",
   "main": "index.js",
   "type": "commonjs",
