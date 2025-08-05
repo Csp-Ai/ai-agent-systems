@@ -1,8 +1,17 @@
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
 const profilesPath = path.join(__dirname, 'agents', 'metadata', 'agent-profiles.json');
-const profiles = JSON.parse(fs.readFileSync(profilesPath, 'utf8'));
+
+async function loadProfiles() {
+  try {
+    const data = await fs.readFile(profilesPath, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Failed to load agent profiles', err);
+    return {};
+  }
+}
 
 async function fetchSource(src) {
   if (/^https?:\/\//.test(src)) {
@@ -10,10 +19,11 @@ async function fetchSource(src) {
     if (!res.ok) throw new Error(`Failed to fetch ${src}: ${res.statusText}`);
     return await res.text();
   }
-  return fs.readFileSync(path.join(__dirname, src), 'utf8');
+  return await fs.readFile(path.join(__dirname, src), 'utf8');
 }
 
 async function absorbKnowledge() {
+  const profiles = await loadProfiles();
   for (const [id, profile] of Object.entries(profiles)) {
     if (!profile.learningSources || !profile.learningSources.length) continue;
     const results = [];
@@ -27,19 +37,26 @@ async function absorbKnowledge() {
       }
     }
     if (results.length) {
-      const dir = path.join(__dirname, 'logs', 'agent-knowledge', id);
-      fs.mkdirSync(dir, { recursive: true });
-      const payload = { timestamp: new Date().toISOString(), results };
-      const file = path.join(dir, `${Date.now()}.json`);
-      fs.writeFileSync(file, JSON.stringify(payload, null, 2));
-      fs.writeFileSync(path.join(dir, 'latest.json'), JSON.stringify(payload, null, 2));
-      console.log(`Logged learnings for ${id}`);
+      try {
+        const dir = path.join(__dirname, 'logs', 'agent-knowledge', id);
+        await fs.mkdir(dir, { recursive: true });
+        const payload = { timestamp: new Date().toISOString(), results };
+        const file = path.join(dir, `${Date.now()}.json`);
+        await fs.writeFile(file, JSON.stringify(payload, null, 2));
+        await fs.writeFile(path.join(dir, 'latest.json'), JSON.stringify(payload, null, 2));
+        console.log(`Logged learnings for ${id}`);
+      } catch (err) {
+        console.error(`Failed to log learnings for ${id}`, err);
+      }
     }
   }
 }
 
 if (require.main === module) {
-  absorbKnowledge();
+  absorbKnowledge().catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
 }
 
 module.exports = { absorbKnowledge };
